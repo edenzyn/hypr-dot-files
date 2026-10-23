@@ -698,7 +698,7 @@ PanelWindow {
     // 11. Settings Query Process
     Process {
         id: settingsQueryProc
-        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===NIGHTLIGHT==='; hyprctl getoption decoration:screen_shader 2>/dev/null | grep -q 'night-light' && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration:blur:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input:touchpad:natural_scroll 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'"]
+        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===NIGHTLIGHT==='; pgrep -x hyprsunset >/dev/null && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration:blur:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input:touchpad:natural_scroll 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'"]
         stdout: StdioCollector {
             onStreamFinished: {
                 controlPanelWindow.settingsLoading = false
@@ -756,10 +756,18 @@ PanelWindow {
 
     // Night light state is saved here so it survives logins and Quickshell reloads
     readonly property string nightLightStateFile: Quickshell.env("HOME") + "/.local/state/quickshell/nightlight"
-    readonly property string nightLightShader: Quickshell.env("HOME") + "/.config/hypr/shaders/night-light.frag"
+    readonly property int nightLightTemp: 5200 // Kelvin, lower = warmer (6500 = no tint)
 
+    // hyprsunset tints in display hardware (no GPU cost). It only runs while
+    // night light is on; when it exits Hyprland restores normal colors.
     function applyNightLight() {
-        Quickshell.execDetached(["hyprctl", "keyword", "decoration:screen_shader", controlPanelWindow.nightLightActive ? controlPanelWindow.nightLightShader : ""])
+        if (controlPanelWindow.nightLightActive) {
+            Quickshell.execDetached(["sh", "-c",
+                "pgrep -x hyprsunset >/dev/null && hyprctl hyprsunset temperature \"$1\" || exec hyprsunset -t \"$1\"",
+                "sh", String(controlPanelWindow.nightLightTemp)])
+        } else {
+            Quickshell.execDetached(["pkill", "-x", "hyprsunset"])
+        }
     }
 
     Process {
@@ -774,7 +782,7 @@ PanelWindow {
         }
     }
 
-    // A Hyprland config reload resets screen_shader, so re-apply it
+    // Re-apply after a Hyprland config reload, in case it reset the color matrix
     Connections {
         target: Hyprland
         function onRawEvent(event) {

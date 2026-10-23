@@ -1,0 +1,10 @@
+# Whitelist: ignore everything in ~/.config except the folders listed below.
+# To track another config, add a line like:  !/ghostty/
+/*
+!/.gitignore
+!/README.md
+!/hypr/
+!/quickshell/
+
+# Machine state, changes every time the wallpaper changes
+/hypr/current_wallpaper

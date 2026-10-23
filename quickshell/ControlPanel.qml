@@ -756,7 +756,7 @@ PanelWindow {
 
     // Night light state is saved here so it survives logins and Quickshell reloads
     readonly property string nightLightStateFile: Quickshell.env("HOME") + "/.local/state/quickshell/nightlight"
-    readonly property int nightLightTemp: 5200 // Kelvin, lower = warmer (6500 = no tint)
+    readonly property int nightLightTemp: 4800 // Kelvin, lower = warmer (6500 = no tint)
 
     // hyprsunset tints in display hardware (no GPU cost). It only runs while
     // night light is on; when it exits Hyprland restores normal colors.

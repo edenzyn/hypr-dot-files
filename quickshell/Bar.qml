@@ -1005,6 +1005,7 @@ Scope {
         id: controlPanelPopup
         isOpen: root.showControlPanel
         barHeight: barWindow.implicitHeight
+        inhibitWindow: barWindow
         bgColor: root.bgColor
         bgColor2: root.bgColor2
         fgColor: root.fgColor

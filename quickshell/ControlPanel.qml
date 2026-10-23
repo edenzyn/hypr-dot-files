@@ -4,6 +4,7 @@ import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.UPower
 import Quickshell.Services.Pipewire
@@ -68,6 +69,7 @@ PanelWindow {
     // Settings view properties
     property string currentPowerProfile: "performance"
     property bool caffeineActive: false
+    property var inhibitWindow: null // an always-visible window (the bar) for the caffeine idle inhibitor
     property bool nightLightActive: false
     property int currentRefreshRate: 120
     property bool blurEnabled: true
@@ -696,7 +698,7 @@ PanelWindow {
     // 11. Settings Query Process
     Process {
         id: settingsQueryProc
-        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===CAFFEINE==='; ps -C hypridle -o state= 2>/dev/null | grep -q 'T' && echo '1' || echo '0'; echo '===NIGHTLIGHT==='; hyprctl getoption decoration:screen_shader 2>/dev/null | grep -q 'str: .\\+' && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration:blur:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input:touchpad:natural_scroll 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'"]
+        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===NIGHTLIGHT==='; hyprctl getoption decoration:screen_shader 2>/dev/null | grep -q 'night-light' && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration:blur:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input:touchpad:natural_scroll 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'"]
         stdout: StdioCollector {
             onStreamFinished: {
                 controlPanelWindow.settingsLoading = false
@@ -705,9 +707,6 @@ PanelWindow {
 
                 let rMatch = text.match(/===REFRESH===\s*([^\n\r]+)/)
                 if (rMatch) controlPanelWindow.currentRefreshRate = parseInt(rMatch[1].trim()) || 120
-
-                let cMatch = text.match(/===CAFFEINE===\s*([^\n\r]+)/)
-                if (cMatch) controlPanelWindow.caffeineActive = (cMatch[1].trim() === "1")
 
                 let nlMatch = text.match(/===NIGHTLIGHT===\s*([^\n\r]+)/)
                 if (nlMatch) controlPanelWindow.nightLightActive = (nlMatch[1].trim() === "1")
@@ -744,13 +743,48 @@ PanelWindow {
         Quickshell.execDetached(["powerprofilesctl", "set", mode])
     }
 
+    // Caffeine uses a Wayland idle inhibitor (hypridle respects it). It used to
+    // SIGSTOP hypridle, which froze its D-Bus name and hung xdg-desktop-portal-gtk.
     function toggleCaffeine() {
         controlPanelWindow.caffeineActive = !controlPanelWindow.caffeineActive
-        if (controlPanelWindow.caffeineActive) {
-            Quickshell.execDetached(["killall", "-STOP", "hypridle"])
-        } else {
-            Quickshell.execDetached(["killall", "-CONT", "hypridle"])
+    }
+
+    IdleInhibitor {
+        window: controlPanelWindow.inhibitWindow
+        enabled: controlPanelWindow.caffeineActive && controlPanelWindow.inhibitWindow !== null
+    }
+
+    // Night light state is saved here so it survives logins and Quickshell reloads
+    readonly property string nightLightStateFile: Quickshell.env("HOME") + "/.local/state/quickshell/nightlight"
+    readonly property string nightLightShader: Quickshell.env("HOME") + "/.config/hypr/shaders/night-light.frag"
+
+    function applyNightLight() {
+        Quickshell.execDetached(["hyprctl", "keyword", "decoration:screen_shader", controlPanelWindow.nightLightActive ? controlPanelWindow.nightLightShader : ""])
+    }
+
+    Process {
+        id: nightLightInitProc
+        running: true
+        command: ["cat", controlPanelWindow.nightLightStateFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                controlPanelWindow.nightLightActive = (text.trim() === "1")
+                controlPanelWindow.applyNightLight()
+            }
         }
+    }
+
+    // A Hyprland config reload resets screen_shader, so re-apply it
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "configreloaded" && controlPanelWindow.nightLightActive) controlPanelWindow.applyNightLight()
+        }
+    }
+
+    Component.onCompleted: {
+        // Unfreeze a hypridle left stopped by the old caffeine implementation
+        Quickshell.execDetached(["pkill", "-CONT", "-x", "hypridle"])
     }
 
     function setRefreshRate(hz) {
@@ -760,11 +794,9 @@ PanelWindow {
 
     function toggleNightLight() {
         controlPanelWindow.nightLightActive = !controlPanelWindow.nightLightActive
-        if (controlPanelWindow.nightLightActive) {
-            Quickshell.execDetached(["hyprctl", "keyword", "decoration:screen_shader", Quickshell.env("HOME") + "/.config/hypr/shaders/night-light.frag"])
-        } else {
-            Quickshell.execDetached(["hyprctl", "keyword", "decoration:screen_shader", ""])
-        }
+        applyNightLight()
+        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" > \"$1\"", "sh",
+            controlPanelWindow.nightLightStateFile, controlPanelWindow.nightLightActive ? "1" : "0"])
     }
 
     function toggleBlur() {

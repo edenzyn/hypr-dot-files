@@ -4,12 +4,15 @@ import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import Quickshell.Services.Notifications
 
 PanelWindow {
     id: notificationPanelWindow
 
     property bool isOpen: false
+
+    property var barWindowRef: null // bar clicks pass through the focus grab
     signal closeRequested()
     signal newNotification(var notif)
 
@@ -197,7 +200,15 @@ PanelWindow {
     color: "transparent"
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    // Close on a click anywhere outside the panel, including the other monitor
+    // (Exclusive keyboard focus made Hyprland swallow those clicks instead)
+    HyprlandFocusGrab {
+        windows: notificationPanelWindow.barWindowRef ? [ notificationPanelWindow, notificationPanelWindow.barWindowRef ] : [ notificationPanelWindow ]
+        active: notificationPanelWindow.isOpen
+        onCleared: notificationPanelWindow.closeRequested()
+    }
 
     visible: isOpen || dropDownAnim.running || dropUpAnim.running
 

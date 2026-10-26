@@ -11,6 +11,8 @@ PanelWindow {
     id: powerMenuWindow
 
     property bool isOpen: false
+
+    property var barWindowRef: null // bar clicks pass through the focus grab
     signal closeRequested()
     signal openRequested()
 
@@ -158,7 +160,15 @@ PanelWindow {
     color: "transparent"
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    // Close on a click anywhere outside the panel, including the other monitor
+    // (Exclusive keyboard focus made Hyprland swallow those clicks instead)
+    HyprlandFocusGrab {
+        windows: powerMenuWindow.barWindowRef ? [ powerMenuWindow, powerMenuWindow.barWindowRef ] : [ powerMenuWindow ]
+        active: powerMenuWindow.isOpen
+        onCleared: powerMenuWindow.closeRequested()
+    }
 
     visible: isOpen || dropDownAnim.running || dropUpAnim.running
 

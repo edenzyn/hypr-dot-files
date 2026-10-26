@@ -13,6 +13,8 @@ PanelWindow {
     id: wallpaperWindow
 
     property bool isOpen: false
+
+    property var barWindowRef: null // bar clicks pass through the focus grab
     signal closeRequested()
     signal openRequested()
 
@@ -262,7 +264,15 @@ PanelWindow {
     color: "transparent"
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: (isOpen && !isBrowsingFolder) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: (isOpen && !isBrowsingFolder) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    // Close on a click anywhere outside the panel, including the other monitor
+    // (Exclusive keyboard focus made Hyprland swallow those clicks instead)
+    HyprlandFocusGrab {
+        windows: wallpaperWindow.barWindowRef ? [ wallpaperWindow, wallpaperWindow.barWindowRef ] : [ wallpaperWindow ]
+        active: wallpaperWindow.isOpen && !wallpaperWindow.isBrowsingFolder
+        onCleared: wallpaperWindow.closeRequested()
+    }
 
     visible: (isOpen && !isBrowsingFolder) || dropDownAnim.running || dropUpAnim.running
 

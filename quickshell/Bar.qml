@@ -16,6 +16,8 @@ Scope {
     // Change this value to scale everything in the bar proportionally (e.g. 1.0, 1.2, 1.5)
     property real barScale: 1.2
 
+    readonly property var barPanelWindow: barWindow
+
     // ─── Full Media Player Popup State ────────────────────────
     property bool showFullPlayer: false
 
@@ -915,6 +917,7 @@ Scope {
     // ─── Full Media Player Popup ──────────────────────────────
     FullMediaPlayer {
         id: fullMediaPlayer
+        barWindowRef: barWindow
         isOpen: root.showFullPlayer
         player: root.activePlayer
         barHeight: barWindow.implicitHeight
@@ -956,6 +959,7 @@ Scope {
     // ─── Calendar Popup ───────────────────────────────────────
     CalendarPopup {
         id: calendarPopup
+        barWindowRef: barWindow
         isOpen: root.showCalendar
         barHeight: barWindow.implicitHeight
         barScale: root.barScale
@@ -1003,6 +1007,7 @@ Scope {
     // ─── Control Panel Popup ──────────────────────────────────
     ControlPanel {
         id: controlPanelPopup
+        barWindowRef: barWindow
         isOpen: root.showControlPanel
         barHeight: barWindow.implicitHeight
         inhibitWindow: barWindow
@@ -1144,6 +1149,7 @@ Scope {
     // ─── Tray Menu Popup ──────────────────────────────────────
     TrayMenu {
         id: trayMenuPopup
+        barWindowRef: barWindow
         isOpen: root.showTrayMenu
         barHeight: barWindow.implicitHeight
         bgColor: root.bgColor
@@ -1237,6 +1243,7 @@ Scope {
     // ─── Notification Panel Popup ─────────────────────────────
     NotificationPanel {
         id: notifPanelPopup
+        barWindowRef: barWindow
         isOpen: root.showNotificationPanel
         barHeight: barWindow.implicitHeight
         bgColor: root.bgColor
@@ -1276,6 +1283,7 @@ Scope {
     // ─── App Launcher Popup ───────────────────────────────────
     AppLauncher {
         id: appLauncherPopup
+        barWindowRef: barWindow
         isOpen: root.showAppLauncher
         barHeight: barWindow.implicitHeight
         bgColor: root.bgColor
@@ -1301,6 +1309,7 @@ Scope {
     // ─── Power Menu Popup ─────────────────────────────────────
     PowerMenu {
         id: powerMenuPopup
+        barWindowRef: barWindow
         isOpen: root.showPowerMenu
         barHeight: barWindow.implicitHeight
         bgColor: root.bgColor
@@ -1327,6 +1336,7 @@ Scope {
     // ─── Wallpaper Selector Popup ─────────────────────────────
     WallpaperSelector {
         id: wallpaperSelectorPopup
+        barWindowRef: barWindow
         isOpen: root.showWallpaperSelector
         barHeight: barWindow.implicitHeight
         bgColor: root.bgColor

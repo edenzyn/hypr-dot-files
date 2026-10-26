@@ -4,6 +4,7 @@ import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import Quickshell.Services.Pipewire
@@ -12,6 +13,8 @@ PanelWindow {
     id: popupWindow
 
     property bool isOpen: false
+
+    property var barWindowRef: null // bar clicks pass through the focus grab
     signal closeRequested()
 
 
@@ -141,7 +144,15 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     
     // 1. Tell Wayland to route keyboard events to this window ONLY when it is open
-    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    // Close on a click anywhere outside the panel, including the other monitor
+    // (Exclusive keyboard focus made Hyprland swallow those clicks instead)
+    HyprlandFocusGrab {
+        windows: popupWindow.barWindowRef ? [ popupWindow, popupWindow.barWindowRef ] : [ popupWindow ]
+        active: popupWindow.isOpen
+        onCleared: popupWindow.closeRequested()
+    }
 
     visible: isOpen || dropDownAnim.running || dropUpAnim.running
 

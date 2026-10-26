@@ -13,6 +13,8 @@ PanelWindow {
 
     property bool isOpen: false
 
+    property var barWindowRef: null // bar clicks pass through the focus grab
+
     function toggle() { isOpen = !isOpen }
     function open() { isOpen = true }
     function close() { isOpen = false }
@@ -149,7 +151,15 @@ PanelWindow {
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-clipboard"
-    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: isOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    // Close on a click anywhere outside the panel, including the other monitor
+    // (Exclusive keyboard focus made Hyprland swallow those clicks instead)
+    HyprlandFocusGrab {
+        windows: clipboardWindow.barWindowRef ? [ clipboardWindow, clipboardWindow.barWindowRef ] : [ clipboardWindow ]
+        active: clipboardWindow.isOpen
+        onCleared: clipboardWindow.close()
+    }
 
     visible: isOpen || dropDownAnim.running || dropUpAnim.running
 

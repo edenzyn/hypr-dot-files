@@ -720,7 +720,7 @@ PanelWindow {
                                         // Wallpaper Thumbnail Image
                                         Image {
                                             anchors.fill: parent
-                                            source: "file://" + modelData.path
+                                            source: "file://" + (modelData.thumb || modelData.path)
                                             fillMode: Image.PreserveAspectCrop
                                             asynchronous: true
                                             sourceSize: Qt.size(240, 140)
@@ -769,6 +769,28 @@ PanelWindow {
                                             }
                                         }
 
+                                        // Video badge (bottom right)
+                                        Rectangle {
+                                            visible: modelData.type === "video"
+                                            anchors {
+                                                bottom: parent.bottom
+                                                right: parent.right
+                                                margins: 6
+                                            }
+                                            width: 22
+                                            height: 22
+                                            radius: 11
+                                            color: Qt.rgba(0.1, 0.1, 0.1, 0.75)
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                anchors.horizontalCenterOffset: 1
+                                                text: "" // play
+                                                font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 9 }
+                                                color: "#FFFFFF"
+                                            }
+                                        }
+
                                         // Category tag (top left on hover)
                                         Rectangle {
                                             visible: isHovered && !isCurrent
@@ -799,6 +821,7 @@ PanelWindow {
                                                 bottom: parent.bottom
                                                 margins: 8
                                             }
+                                            anchors.rightMargin: modelData.type === "video" ? 32 : 8
                                             text: modelData.name
                                             font { family: "Inter"; pixelSize: 10; weight: Font.Bold }
                                             color: isHovered || isCurrent ? "#FFFFFF" : wallpaperWindow.fgColor
@@ -891,7 +914,7 @@ PanelWindow {
                                         color: "#FFFFFF"
                                     }
                                     Text {
-                                        text: "Add any folder containing wallpapers (.jpg, .png, .webp). They will be automatically indexed."
+                                        text: "Add any folder containing wallpapers (.jpg, .png, .webp) or videos (.mp4, .webm, .mkv, .mov, .gif). They will be automatically indexed."
                                         font { family: "Inter"; pixelSize: 11; weight: Font.Normal }
                                         color: wallpaperWindow.fgColor
                                     }

@@ -1,10 +1,37 @@
 #!/usr/bin/env python3
 import os
 import json
+import hashlib
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
 
 SOURCES_FILE = os.path.expanduser("~/.config/hypr/wallpaper_sources.json")
 cur_file = os.path.expanduser("~/.config/hypr/current_wallpaper")
-valid_exts = ('.jpg', '.jpeg', '.png', '.webp')
+THUMB_DIR = os.path.expanduser("~/.cache/wallpaper-thumbs")
+image_exts = ('.jpg', '.jpeg', '.png', '.webp')
+video_exts = ('.mp4', '.webm', '.mkv', '.mov', '.gif')  # played with mpvpaper
+valid_exts = image_exts + video_exts
+
+# Video thumbnails are cached by path + mtime, so they are only made once
+pending_thumbs = []
+
+def video_thumb(path):
+    key = hashlib.sha1(f"{path}:{os.path.getmtime(path)}".encode()).hexdigest()
+    out = os.path.join(THUMB_DIR, key + ".jpg")
+    if not os.path.exists(out):
+        pending_thumbs.append((path, out))
+    return out
+
+def make_thumb(job):
+    path, out = job
+    base = ["ffmpeg", "-v", "error", "-y"]
+    tail = ["-i", path, "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "5", out]
+    try:
+        # Grab a frame 1s in (skips black intros), fall back to the first frame
+        if path.lower().endswith('.gif') or subprocess.run(base + ["-ss", "1"] + tail, timeout=30).returncode != 0 or not os.path.exists(out):
+            subprocess.run(base + tail, timeout=30)
+    except Exception:
+        pass
 
 current_wall = ""
 if os.path.exists(cur_file):
@@ -66,11 +93,14 @@ for src in sources:
                 clean_name = os.path.splitext(f)[0].replace('-', ' ').replace('_', ' ').title()
                 if len(clean_name) > 28:
                     clean_name = clean_name[:25] + "..."
+                is_video = f.lower().endswith(video_exts)
                 wallpapers.append({
                     "path": p,
                     "name": clean_name,
                     "category": cat,
-                    "folder": expanded_src
+                    "folder": expanded_src,
+                    "type": "video" if is_video else "image",
+                    "thumb": video_thumb(p) if is_video else p
                 })
 
     folders_info.append({
@@ -78,6 +108,11 @@ for src in sources:
         "name": src_folder_name.replace('_', ' ').replace('-', ' ').title(),
         "count": folder_wall_count
     })
+
+if pending_thumbs:
+    os.makedirs(THUMB_DIR, exist_ok=True)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(make_thumb, pending_thumbs))
 
 sorted_cats = ["All"] + sorted(list(categories_set))
 

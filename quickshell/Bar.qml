@@ -97,7 +97,7 @@ Scope {
 
     PanelWindow {
         id: barWindow
-
+		screen: Quickshell.screens.find(s => s.name === "HDMI-A-1")
         anchors {
             top: true
             left: true

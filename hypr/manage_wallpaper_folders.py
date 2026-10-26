@@ -5,7 +5,7 @@ import json
 import subprocess
 
 SOURCES_FILE = os.path.expanduser("~/.config/hypr/wallpaper_sources.json")
-VALID_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+VALID_EXTS = ('.jpg', '.jpeg', '.png', '.webp', '.mp4', '.webm', '.mkv', '.mov', '.gif')
 
 def load_sources():
     if not os.path.exists(SOURCES_FILE):

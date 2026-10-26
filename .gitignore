@@ -8,3 +8,6 @@
 
 # Machine state, changes every time the wallpaper changes
 /hypr/current_wallpaper
+
+# Backup copies
+*.bak

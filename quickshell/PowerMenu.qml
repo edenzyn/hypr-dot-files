@@ -109,7 +109,7 @@ PanelWindow {
             if (confirmTarget === "logout") {
                 confirmTarget = ""
                 closeRequested()
-                Quickshell.execDetached(["hyprctl", "dispatch", "exit"])
+                Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.exit()"])
             } else {
                 confirmTarget = "logout"
                 confirmResetTimer.restart()

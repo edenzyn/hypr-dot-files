@@ -99,7 +99,12 @@ Scope {
 
     PanelWindow {
         id: barWindow
-		screen: Quickshell.screens.find(s => s.name === "HDMI-A-1")
+
+        // ## top bar on monitor
+		// screen: Quickshell.screens.find(s => s.name === "HDMI-A-1")
+		
+		// ## top bar on laptop screen
+		screen: Quickshell.screens.find(s => s.name === "eDP-1")
         anchors {
             top: true
             left: true
@@ -211,7 +216,7 @@ Scope {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: Hyprland.dispatch("workspace " + modelData.id)
+                                onClicked: Hyprland.dispatch(`hl.dsp.focus({ workspace = ${modelData.id} })`)
                             }
                         }
                     }

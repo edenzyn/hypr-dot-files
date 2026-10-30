@@ -708,7 +708,7 @@ PanelWindow {
     // 11. Settings Query Process
     Process {
         id: settingsQueryProc
-        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===NIGHTLIGHT==='; pgrep -x hyprsunset >/dev/null && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration:blur:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations:enabled 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input:touchpad:natural_scroll 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | grep -q 'int: 1' && echo '1' || echo '0'"]
+        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===NIGHTLIGHT==='; pgrep -x hyprsunset >/dev/null && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration.blur.enabled 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations.enabled 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input.touchpad.natural_scroll 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input.touchpad.tap_to_click 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'"]
         stdout: StdioCollector {
             onStreamFinished: {
                 controlPanelWindow.settingsLoading = false
@@ -805,9 +805,15 @@ PanelWindow {
         Quickshell.execDetached(["pkill", "-CONT", "-x", "hypridle"])
     }
 
+    // Hyprland 0.57+ is configured in Lua: runtime changes go through `hyprctl eval`
+    // (the old `hyprctl keyword` form is gone)
+    function hyprEval(code) {
+        Quickshell.execDetached(["hyprctl", "eval", code])
+    }
+
     function setRefreshRate(hz) {
         controlPanelWindow.currentRefreshRate = hz
-        Quickshell.execDetached(["hyprctl", "keyword", "monitor", `eDP-1,1920x1080@${hz},0x0,1`])
+        hyprEval(`hl.monitor({ output = "eDP-1", mode = "1920x1080@${hz}", position = "0x0", scale = 1 })`)
     }
 
     function toggleNightLight() {
@@ -819,22 +825,22 @@ PanelWindow {
 
     function toggleBlur() {
         controlPanelWindow.blurEnabled = !controlPanelWindow.blurEnabled
-        Quickshell.execDetached(["hyprctl", "keyword", "decoration:blur:enabled", controlPanelWindow.blurEnabled ? "1" : "0"])
+        hyprEval(`hl.config({ decoration = { blur = { enabled = ${controlPanelWindow.blurEnabled} } } })`)
     }
 
     function toggleAnimations() {
         controlPanelWindow.animationsEnabled = !controlPanelWindow.animationsEnabled
-        Quickshell.execDetached(["hyprctl", "keyword", "animations:enabled", controlPanelWindow.animationsEnabled ? "1" : "0"])
+        hyprEval(`hl.config({ animations = { enabled = ${controlPanelWindow.animationsEnabled} } })`)
     }
 
     function toggleNaturalScroll() {
         controlPanelWindow.naturalScrollEnabled = !controlPanelWindow.naturalScrollEnabled
-        Quickshell.execDetached(["hyprctl", "keyword", "input:touchpad:natural_scroll", controlPanelWindow.naturalScrollEnabled ? "1" : "0"])
+        hyprEval(`hl.config({ input = { touchpad = { natural_scroll = ${controlPanelWindow.naturalScrollEnabled} } } })`)
     }
 
     function toggleTapToClick() {
         tapToClickEnabled = !tapToClickEnabled
-        Quickshell.execDetached(["hyprctl", "keyword", "input:touchpad:tap-to-click", tapToClickEnabled ? "1" : "0"])
+        hyprEval(`hl.config({ input = { touchpad = { tap_to_click = ${tapToClickEnabled} } } })`)
     }
 
     function setMicVolume(ratio) {

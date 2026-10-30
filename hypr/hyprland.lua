@@ -139,6 +139,25 @@ hl.animation({ leaf = "workspaces",  enabled = true, speed = 4, bezier = "defaul
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 
+--------------------------------
+---- WINDOWS AND WORKSPACES ----
+--------------------------------
+
+-- Payment / bank popups (Razorpay netbanking etc.) open floating like on GNOME.
+-- Tiling them resized the app's window underneath, and the checkout then
+-- closed the popup and failed the payment.
+hl.window_rule({
+    name  = "float-payment-popups",
+    match = {
+        class = "^(google-chrome|chromium|brave-browser)$",
+        title = "(?i).*(processing, please wait|razorpay|payment|netbanking|net banking|bank|secure|3d ?secure|otp).*",
+    },
+    float  = true,
+    center = true,
+    size   = "900 700",
+})
+
+
 ---------------------
 ---- KEYBINDINGS ----
 ---------------------

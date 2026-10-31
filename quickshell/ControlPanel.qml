@@ -953,11 +953,18 @@ PanelWindow {
     }
 
     function writeDisplay(primary, mode) {
+        // Switching into a single-screen mode from anything but Extend would turn
+        // one screen off and the other on in the same step. For that moment no
+        // output exists and Quickshell's windows (bar, wallpaper) get lost, so
+        // pass through Extend first: one screen always stays on.
+        let viaExtend = (mode === "laptop" || mode === "monitor") && controlPanelWindow.displayMode !== "extend"
         controlPanelWindow.displayPrimary = primary
         controlPanelWindow.displayMode = mode
         Quickshell.execDetached(["sh", "-c",
-            "mkdir -p \"$HOME/.local/state/hypr\" && printf 'primary=%s\\nmode=%s\\n' \"$1\" \"$2\" > \"$HOME/.local/state/hypr/display\" && hyprctl reload",
-            "sh", primary, mode])
+            "f=\"$HOME/.local/state/hypr/display\"; mkdir -p \"${f%/*}\"; " +
+            "if [ \"$3\" = 1 ]; then printf 'primary=%s\\nmode=extend\\n' \"$1\" > \"$f\" && hyprctl reload && sleep 1.5; fi; " +
+            "printf 'primary=%s\\nmode=%s\\n' \"$1\" \"$2\" > \"$f\" && hyprctl reload",
+            "sh", primary, mode, viaExtend ? "1" : "0"])
     }
 
     function toggleNightLight() {

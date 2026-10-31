@@ -46,7 +46,9 @@ It works on my machine.  - every developer, ever
 EOF
         ;;
     refresh)
-        stale weather 1800 && fetch weather sh -c "curl -s --max-time 4 'wttr.in/?format=%c%t+%C' | grep '°'"
+        # Optional fixed city in ~/.config/fastfetch/weather-city (else located by IP)
+        city=$(tr ' ' '+' < "$HOME/.config/fastfetch/weather-city" 2>/dev/null)
+        stale weather 1800 && fetch weather sh -c "curl -s --max-time 4 'wttr.in/${city}?format=%c%t+%C' | grep '°'"
         stale updates 10800 && fetch updates sh -c "checkupdates 2>/dev/null | wc -l"
         ;;
 esac

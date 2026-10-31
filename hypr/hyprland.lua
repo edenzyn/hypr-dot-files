@@ -62,7 +62,7 @@ local function applyDisplays()
         hl.monitor({ output = other, mode = MODES[other], position = "auto", scale = 1, mirror = primary })
     else -- extend: primary on the left
         show(primary, "0x0")
-        show(other, "1920x0")
+        show(other, "auto-right") -- to the right of the primary, any resolution
     end
     hl.workspace_rule({ workspace = "1", monitor = primary, default = true })
 end

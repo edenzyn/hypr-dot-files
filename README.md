@@ -1,10 +1,60 @@
-# hypr-dot-files
+# EdenHypr
 
-Hyprland (Lua config, 0.57+) + Quickshell desktop, plus the terminal setup.
+**The complete Hyprland setup** · Hyprland + Quickshell + ghostty + fish + starship + fastfetch
+© 2026 EDEN
+
+- Floating pill bar with media, tray, notifications, control panel, calendar
+- Control panel: Wi-Fi/Bluetooth/audio, night light + warmth, caffeine, game mode,
+  display projection (extend / mirror / laptop / monitor), accent color, power profiles
+- Notifications with a Show button that jumps to the app on any screen
+- Clipboard history, wallpaper picker (images + videos), screenshots, screen-share picker
+- Terminal welcome card (greeting, weather, updates, system info, a quote)
+
+## Install
+
+Arch-based distros (Arch, CachyOS, EndeavourOS, ...):
+
+```sh
+git clone https://github.com/edenzyn/hypr-dot-files
+cd hypr-dot-files
+./install.sh --dry-run   # optional: see every step first, changes nothing
+./install.sh
+```
+
+The installer asks:
+
+1. **GNOME / KDE found?** Install **alongside** it (pick at the login screen) or **replace** it
+   (asks you to type `REPLACE`, keeps a working login screen).
+2. **Primary screen** when two are connected (gets the bar and workspace 1).
+3. **Options:** terminal setup, fish as default shell, video wallpapers, night light.
+4. **Weather city** for the terminal card (empty = detect automatically).
+
+It then installs packages (official repos first, AUR via `yay`/`paru`), backs up your
+current configs to `~/.config/eden-backup-<date>/`, copies EdenHypr in, and adapts it to
+your machine (your home folder, monitor names, highest refresh rate). Log out and pick
+**Hyprland** at the login screen.
+
+**Undo:** copy the folders from `~/.config/eden-backup-<date>/` back into `~/.config/`.
+
+## Shortcuts
+
+| Keys | Action |
+| --- | --- |
+| `SUPER+D` | App launcher |
+| `SUPER+X` | Terminal |
+| `SUPER+A` / `SUPER+I` | Control panel / its Settings |
+| `SUPER+V` | Clipboard history |
+| `SUPER+W` | Wallpapers |
+| `SUPER+S` / `SUPER+Print` | Screenshot area / screen |
+| `SUPER+F` / `SUPER+M` | Fullscreen / maximize |
+| `SUPER+SHIFT+arrows` / `SUPER+CTRL+arrows` | Move / resize window |
+| `SUPER+Q` | Close window |
+| `SUPER+L` | Lock |
 
 ## Layout
 
 ```
+install.sh                  EdenHypr installer
 hypr/
 ├── hyprland.lua            Hyprland: monitors, autostart, look, rules, keybinds
 ├── hypridle.conf           dim / lock / screen off / suspend timers
@@ -24,28 +74,9 @@ quickshell/                 bar, launcher, control panel, media player,
 ghostty/config              terminal
 fish/config.fish            shell
 starship/starship.toml      prompt (fish sets STARSHIP_CONFIG)
-fastfetch/                  welcome card (config.jsonc + greet.sh)
+fastfetch/                  welcome card (config.jsonc + greet.sh);
+                            put a logo at fastfetch/assets/ (kept out of git)
 ```
-
-## Restore on a fresh install
-
-```sh
-cd ~/.config
-git init -b main
-git remote add origin https://github.com/edenzyn/hypr-dot-files.git
-git fetch origin
-git checkout -f main   # overwrites the tracked files above
-```
-
-Packages:
-
-```sh
-sudo pacman -S hyprland hypridle hyprlock hyprpolkitagent hyprsunset xdg-desktop-portal-hyprland \
-  quickshell cliphist wl-clipboard grim slurp brightnessctl ffmpeg mpvpaper socat zenity \
-  ghostty fish starship fastfetch eza bat zoxide pacman-contrib
-```
-
-Fonts: Rowdies, Inter, Font Awesome 6, JetBrainsMono Nerd Font. Cursor: phinger-cursors.
 
 ## Save changes
 

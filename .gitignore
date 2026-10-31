@@ -3,6 +3,7 @@
 /*
 !/.gitignore
 !/README.md
+!/install.sh
 !/hypr/
 !/quickshell/
 
@@ -22,3 +23,4 @@
 
 # Personal logo images (cut from wallpaper art), kept local only
 /fastfetch/assets/
+/fastfetch/weather-city

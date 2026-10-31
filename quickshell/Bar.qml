@@ -93,8 +93,16 @@ Scope {
     // Player picked in the media popup's switcher; wins until it goes away
     property var pinnedPlayer: null
 
+    // A player that finished (e.g. a browser tab after the video ended) stays
+    // around with empty metadata; treat that as "nothing playing"
+    function hasMedia(p) {
+        if (!p) return false
+        let meta = p.metadata || {}
+        return !!(meta["xesam:title"] || meta["xesam:url"] || p.trackTitle)
+    }
+
     function findActivePlayer() {
-        let players = Mpris.players.values
+        let players = Mpris.players.values.filter(p => hasMedia(p) || p.isPlaying)
         if (players.length === 0) return null
         if (pinnedPlayer && players.indexOf(pinnedPlayer) >= 0) return pinnedPlayer
 
@@ -117,6 +125,7 @@ Scope {
         ignoreUnknownSignals: true
         function onIsPlayingChanged() { root.activePlayer = findActivePlayer() }
         function onPlaybackStateChanged() { root.activePlayer = findActivePlayer() }
+        function onMetadataChanged() { root.activePlayer = findActivePlayer() } // track ended / cleared
     }
 
     PanelWindow {
@@ -424,7 +433,7 @@ Scope {
                         verticalAlignment: Text.AlignVCenter
 
                         text: {
-                            if (!root.activePlayer) return "No Media Playing"
+                            if (!root.activePlayer || !root.hasMedia(root.activePlayer)) return "No Media Playing"
 
                             let meta = root.activePlayer.metadata || {}
                             let url = meta["xesam:url"]

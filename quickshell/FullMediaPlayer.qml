@@ -22,8 +22,13 @@ PanelWindow {
 
     property var player: null
     signal playerSelected(var p)
-    // All MPRIS players; the switcher row shows when there is more than one
-    readonly property var allPlayers: Mpris.players.values
+    // MPRIS players that still have media; the switcher row shows when there is more
+    // than one. A finished app (e.g. ZapZap after a voice note/video ends) keeps an
+    // empty player around; it drops out of the switcher until it plays again.
+    readonly property var allPlayers: Mpris.players.values.filter(p => {
+        let meta = p.metadata || {}
+        return p.isPlaying || !!(meta["xesam:title"] || meta["xesam:url"] || p.trackTitle)
+    })
     readonly property bool showSwitcher: allPlayers.length > 1
 
     PwObjectTracker {

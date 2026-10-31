@@ -316,7 +316,7 @@ PanelWindow {
             target: panelRootItem
             property: "y"
             from: -cardContainer.height
-            to: 0
+            to: 8 // gap under the bar
             duration: 280
             easing.type: Easing.OutCubic
         }
@@ -341,6 +341,7 @@ PanelWindow {
 
         // Left curved fillet joining the card smoothly into the top bar
         Shape {
+            visible: false // floating card, no bar fillet
             width: 16
             height: 16
             transform: Scale { origin.y: 8; yScale: -1 }
@@ -370,6 +371,7 @@ PanelWindow {
 
         // Right curved fillet joining the card smoothly into the top bar
         Shape {
+            visible: false // floating card, no bar fillet
             width: 16
             height: 16
             transform: Scale { origin.y: 8; yScale: -1 }
@@ -402,8 +404,8 @@ PanelWindow {
             id: cardContainer
             width: 760
             height: 520
-            topLeftRadius: 0
-            topRightRadius: 0
+            topLeftRadius: bottomLeftRadius
+            topRightRadius: bottomRightRadius
             bottomLeftRadius: 24
             bottomRightRadius: 24
             color: wallpaperWindow.bgColor
@@ -421,6 +423,7 @@ PanelWindow {
 
             // Cover the top line so the card seamlessly merges into the top bar
             Rectangle {
+                visible: false
                 anchors {
                     left: parent.left
                     right: parent.right

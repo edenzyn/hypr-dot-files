@@ -156,7 +156,7 @@ PanelWindow {
             target: menuRootItem
             property: "y"
             from: -cardContainer.height
-            to: 0
+            to: 8 // gap under the bar
             duration: 280
             easing.type: Easing.OutCubic
         }
@@ -181,6 +181,7 @@ PanelWindow {
 
         // Left curved fillet joining the card smoothly into the top bar
         Shape {
+            visible: false // floating card, no bar fillet
             width: 16
             height: 16
             transform: Scale { origin.y: 8; yScale: -1 }
@@ -226,6 +227,7 @@ PanelWindow {
 
         // Right curved fillet joining the card smoothly into the top bar
         Shape {
+            visible: false // floating card, no bar fillet
             width: 16
             height: 16
             transform: Scale { origin.y: 8; yScale: -1 }
@@ -274,8 +276,8 @@ PanelWindow {
             id: cardContainer
             width: 250
             height: Math.min(trayMenuWindow.height - 60, headerCol.height + listFlickable.contentHeight + 24)
-            topLeftRadius: 0
-            topRightRadius: 0
+            topLeftRadius: bottomLeftRadius
+            topRightRadius: bottomRightRadius
             bottomLeftRadius: 20
             bottomRightRadius: 20
             color: trayMenuWindow.bgColor

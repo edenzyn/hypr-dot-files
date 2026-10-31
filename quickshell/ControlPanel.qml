@@ -16,6 +16,8 @@ PanelWindow {
     property bool isOpen: false
 
     property var barWindowRef: null // bar clicks pass through the focus grab
+
+    screen: barWindowRef ? barWindowRef.screen : null // open on the bar's screen
     signal closeRequested()
     signal openNotificationCenterRequested()
     signal dndToggleRequested()
@@ -73,11 +75,10 @@ PanelWindow {
     property bool caffeineActive: false
     property var inhibitWindow: null // an always-visible window (the bar) for the caffeine idle inhibitor
     property bool nightLightActive: false
-    property int currentRefreshRate: 120
-    property bool blurEnabled: true
-    property bool animationsEnabled: true
-    property bool naturalScrollEnabled: true
-    property bool tapToClickEnabled: true
+    // Display layout, shared with hyprland.lua through ~/.local/state/hypr/display
+    property string displayMode: "extend"       // extend | mirror | laptop | monitor
+    property string displayPrimary: "HDMI-A-1"  // eDP-1 (laptop) | HDMI-A-1 (monitor)
+    property bool externalConnected: false
     property bool settingsLoading: false
     readonly property real micVolume: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.volume : 0.45
     readonly property bool micMuted: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.muted : false
@@ -708,30 +709,23 @@ PanelWindow {
     // 11. Settings Query Process
     Process {
         id: settingsQueryProc
-        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===REFRESH==='; hyprctl monitors 2>/dev/null | grep -o '1920x1080@[0-9]*' | head -1 | cut -d@ -f2 || echo '120'; echo '===NIGHTLIGHT==='; pgrep -x hyprsunset >/dev/null && echo '1' || echo '0'; echo '===BLUR==='; hyprctl getoption decoration.blur.enabled 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'; echo '===ANIM==='; hyprctl getoption animations.enabled 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'; echo '===NATURAL==='; hyprctl getoption input.touchpad.natural_scroll 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'; echo '===TAP==='; hyprctl getoption input.touchpad.tap_to_click 2>/dev/null | grep -qiE '(int|bool): *(1|true)' && echo '1' || echo '0'"]
+        command: ["sh", "-c", "echo '===POWER==='; powerprofilesctl get 2>/dev/null || echo 'performance'; echo '===NIGHTLIGHT==='; pgrep -x hyprsunset >/dev/null && echo '1' || echo '0'; echo '===DISPLAY==='; cat \"$HOME/.local/state/hypr/display\" 2>/dev/null; echo '===EXTERNAL==='; hyprctl monitors all 2>/dev/null | grep -q '^Monitor HDMI-A-1' && echo '1' || echo '0'"]
         stdout: StdioCollector {
             onStreamFinished: {
                 controlPanelWindow.settingsLoading = false
                 let pMatch = text.match(/===POWER===\s*([^\n\r]+)/)
                 if (pMatch) controlPanelWindow.currentPowerProfile = pMatch[1].trim()
 
-                let rMatch = text.match(/===REFRESH===\s*([^\n\r]+)/)
-                if (rMatch) controlPanelWindow.currentRefreshRate = parseInt(rMatch[1].trim()) || 120
-
                 let nlMatch = text.match(/===NIGHTLIGHT===\s*([^\n\r]+)/)
                 if (nlMatch) controlPanelWindow.nightLightActive = (nlMatch[1].trim() === "1")
 
-                let bMatch = text.match(/===BLUR===\s*([^\n\r]+)/)
-                if (bMatch) controlPanelWindow.blurEnabled = (bMatch[1].trim() === "1")
+                let modeMatch = text.match(/mode=(\S+)/)
+                if (modeMatch) controlPanelWindow.displayMode = modeMatch[1]
+                let primMatch = text.match(/primary=(\S+)/)
+                if (primMatch) controlPanelWindow.displayPrimary = primMatch[1]
 
-                let aMatch = text.match(/===ANIM===\s*([^\n\r]+)/)
-                if (aMatch) controlPanelWindow.animationsEnabled = (aMatch[1].trim() === "1")
-
-                let nMatch = text.match(/===NATURAL===\s*([^\n\r]+)/)
-                if (nMatch) controlPanelWindow.naturalScrollEnabled = (nMatch[1].trim() === "1")
-
-                let tMatch = text.match(/===TAP===\s*([^\n\r]+)/)
-                if (tMatch) controlPanelWindow.tapToClickEnabled = (tMatch[1].trim() === "1")
+                let exMatch = text.match(/===EXTERNAL===\s*([^\n\r]+)/)
+                if (exMatch) controlPanelWindow.externalConnected = (exMatch[1].trim() === "1")
             }
         }
     }
@@ -805,15 +799,14 @@ PanelWindow {
         Quickshell.execDetached(["pkill", "-CONT", "-x", "hypridle"])
     }
 
-    // Hyprland 0.57+ is configured in Lua: runtime changes go through `hyprctl eval`
-    // (the old `hyprctl keyword` form is gone)
-    function hyprEval(code) {
-        Quickshell.execDetached(["hyprctl", "eval", code])
-    }
-
-    function setRefreshRate(hz) {
-        controlPanelWindow.currentRefreshRate = hz
-        hyprEval(`hl.monitor({ output = "eDP-1", mode = "1920x1080@${hz}", position = "0x0", scale = 1 })`)
+    // Save the display layout and reload Hyprland; hyprland.lua reads the same
+    // file, so the choice also survives logins. The bar follows "primary".
+    function setDisplay(primary, mode) {
+        controlPanelWindow.displayPrimary = primary
+        controlPanelWindow.displayMode = mode
+        Quickshell.execDetached(["sh", "-c",
+            "mkdir -p \"$HOME/.local/state/hypr\" && printf 'primary=%s\\nmode=%s\\n' \"$1\" \"$2\" > \"$HOME/.local/state/hypr/display\" && hyprctl reload",
+            "sh", primary, mode])
     }
 
     function toggleNightLight() {
@@ -821,26 +814,6 @@ PanelWindow {
         applyNightLight()
         Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" > \"$1\"", "sh",
             controlPanelWindow.nightLightStateFile, controlPanelWindow.nightLightActive ? "1" : "0"])
-    }
-
-    function toggleBlur() {
-        controlPanelWindow.blurEnabled = !controlPanelWindow.blurEnabled
-        hyprEval(`hl.config({ decoration = { blur = { enabled = ${controlPanelWindow.blurEnabled} } } })`)
-    }
-
-    function toggleAnimations() {
-        controlPanelWindow.animationsEnabled = !controlPanelWindow.animationsEnabled
-        hyprEval(`hl.config({ animations = { enabled = ${controlPanelWindow.animationsEnabled} } })`)
-    }
-
-    function toggleNaturalScroll() {
-        controlPanelWindow.naturalScrollEnabled = !controlPanelWindow.naturalScrollEnabled
-        hyprEval(`hl.config({ input = { touchpad = { natural_scroll = ${controlPanelWindow.naturalScrollEnabled} } } })`)
-    }
-
-    function toggleTapToClick() {
-        tapToClickEnabled = !tapToClickEnabled
-        hyprEval(`hl.config({ input = { touchpad = { tap_to_click = ${tapToClickEnabled} } } })`)
     }
 
     function setMicVolume(ratio) {
@@ -3280,205 +3253,148 @@ PanelWindow {
                         }
                     }
 
-                    // ── 3. Refresh Rate Pill ──
+                }
+
+                // ─── Display: projection mode + primary display ───
+                Text {
+                    text: "Display"
+                    font { family: "Inter"; pixelSize: 11; weight: Font.Bold }
+                    color: controlPanelWindow.fgColor
+                    opacity: 0.7
+                    Layout.leftMargin: 4
+                }
+
+                Rectangle {
+                    id: displaySegBar
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 46
+                    radius: 23
+                    color: controlPanelWindow.bgColor2
+
+                    readonly property var options: controlPanelWindow.externalConnected
+                        ? [ { mode: "laptop", label: "Laptop", icon: "\uf109" },
+                            { mode: "extend", label: "Extend", icon: "\uf065" },
+                            { mode: "mirror", label: "Mirror", icon: "\uf24d" },
+                            { mode: "monitor", label: "Monitor", icon: "\uf108" } ]
+                        : [ { mode: "laptop", label: "Laptop only (no monitor)", icon: "\uf109" } ]
+                    readonly property int activeIndex: {
+                        if (!controlPanelWindow.externalConnected) return 0
+                        let i = options.findIndex(o => o.mode === controlPanelWindow.displayMode)
+                        return i < 0 ? 1 : i
+                    }
+
+                    // Sliding blue active pill
                     Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 52
-                        radius: 16
-                        color: controlPanelWindow.currentRefreshRate >= 120 ? controlPanelWindow.accentColor : controlPanelWindow.bgColor2
-                        Behavior on color { ColorAnimation { duration: 180 } }
+                        width: Math.round((displaySegBar.width - 8) / displaySegBar.options.length)
+                        height: displaySegBar.height - 8
+                        y: 4
+                        x: Math.round(4 + (displaySegBar.width - 8) / displaySegBar.options.length * displaySegBar.activeIndex)
+                        radius: 19
+                        color: controlPanelWindow.accentColor
+                        Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                    }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: controlPanelWindow.setRefreshRate(controlPanelWindow.currentRefreshRate >= 120 ? 60 : 120)
-                        }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 0
 
-                        RowLayout {
-                            anchors {
-                                fill: parent
-                                leftMargin: 14
-                                rightMargin: 14
-                            }
-                            spacing: 12
+                        Repeater {
+                            model: displaySegBar.options
 
-                            Text {
-                                text: "\uf26c" // display
-                                font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 15 }
-                                color: controlPanelWindow.currentRefreshRate >= 120 ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
-                            }
-
-                            ColumnLayout {
+                            Item {
+                                required property var modelData
+                                required property int index
+                                readonly property bool active: index === displaySegBar.activeIndex
                                 Layout.fillWidth: true
-                                spacing: 1
+                                Layout.fillHeight: true
 
-                                Text {
-                                    text: "Refresh Rate"
-                                    font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
-                                    color: controlPanelWindow.currentRefreshRate >= 120 ? controlPanelWindow.bgColor : "#FFFFFF"
-                                    elide: Text.ElideRight
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 6
+                                    Text {
+                                        text: modelData.icon
+                                        font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 11 }
+                                        color: active ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Text {
+                                        text: modelData.label
+                                        font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                                        color: active ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
                                 }
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: controlPanelWindow.currentRefreshRate >= 120 ? "120Hz Smooth" : "60Hz Saver"
-                                    font { family: "Inter"; pixelSize: 11 }
-                                    color: controlPanelWindow.currentRefreshRate >= 120 ? Qt.darker(controlPanelWindow.bgColor, 1.4) : controlPanelWindow.fgColor
-                                    elide: Text.ElideRight
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    enabled: controlPanelWindow.externalConnected
+                                    onClicked: controlPanelWindow.setDisplay(controlPanelWindow.displayPrimary, modelData.mode)
                                 }
                             }
                         }
                     }
+                }
 
-                    // ── 4. Window Blur Pill ──
+                // Primary display (where the top bar and workspace 1 live, placed on the left)
+                Rectangle {
+                    id: primarySegBar
+                    visible: controlPanelWindow.externalConnected && (controlPanelWindow.displayMode === "extend" || controlPanelWindow.displayMode === "mirror")
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 46
+                    radius: 23
+                    color: controlPanelWindow.bgColor2
+
+                    readonly property var options: [
+                        { output: "eDP-1", label: "Laptop primary", icon: "\uf109" },
+                        { output: "HDMI-A-1", label: "Monitor primary", icon: "\uf108" } ]
+                    readonly property int activeIndex: controlPanelWindow.displayPrimary === "eDP-1" ? 0 : 1
+
                     Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 52
-                        radius: 16
-                        color: controlPanelWindow.blurEnabled ? controlPanelWindow.accentColor : controlPanelWindow.bgColor2
-                        Behavior on color { ColorAnimation { duration: 180 } }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: controlPanelWindow.toggleBlur()
-                        }
-
-                        RowLayout {
-                            anchors {
-                                fill: parent
-                                leftMargin: 14
-                                rightMargin: 14
-                            }
-                            spacing: 12
-
-                            Text {
-                                text: "\uf043" // tint
-                                font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 15 }
-                                color: controlPanelWindow.blurEnabled ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                Text {
-                                    text: "Window Blur"
-                                    font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
-                                    color: controlPanelWindow.blurEnabled ? controlPanelWindow.bgColor : "#FFFFFF"
-                                    elide: Text.ElideRight
-                                }
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: controlPanelWindow.blurEnabled ? "Enabled" : "Off"
-                                    font { family: "Inter"; pixelSize: 11 }
-                                    color: controlPanelWindow.blurEnabled ? Qt.darker(controlPanelWindow.bgColor, 1.4) : controlPanelWindow.fgColor
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
+                        width: Math.round((primarySegBar.width - 8) / 2)
+                        height: primarySegBar.height - 8
+                        y: 4
+                        x: Math.round(4 + (primarySegBar.width - 8) / 2 * primarySegBar.activeIndex)
+                        radius: 19
+                        color: controlPanelWindow.accentColor
+                        Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                     }
 
-                    // ── 5. Natural Scroll Pill ──
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 52
-                        radius: 16
-                        color: controlPanelWindow.naturalScrollEnabled ? controlPanelWindow.accentColor : controlPanelWindow.bgColor2
-                        Behavior on color { ColorAnimation { duration: 180 } }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 0
 
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: controlPanelWindow.toggleNaturalScroll()
-                        }
+                        Repeater {
+                            model: primarySegBar.options
 
-                        RowLayout {
-                            anchors {
-                                fill: parent
-                                leftMargin: 14
-                                rightMargin: 14
-                            }
-                            spacing: 12
-
-                            Text {
-                                text: "\uf07d" // arrows-up-down
-                                font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 15 }
-                                color: controlPanelWindow.naturalScrollEnabled ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
-                            }
-
-                            ColumnLayout {
+                            Item {
+                                required property var modelData
+                                required property int index
+                                readonly property bool active: index === primarySegBar.activeIndex
                                 Layout.fillWidth: true
-                                spacing: 1
+                                Layout.fillHeight: true
 
-                                Text {
-                                    text: "Natural Scroll"
-                                    font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
-                                    color: controlPanelWindow.naturalScrollEnabled ? controlPanelWindow.bgColor : "#FFFFFF"
-                                    elide: Text.ElideRight
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 6
+                                    Text {
+                                        text: modelData.icon
+                                        font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 11 }
+                                        color: active ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Text {
+                                        text: modelData.label
+                                        font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                                        color: active ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
                                 }
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: controlPanelWindow.naturalScrollEnabled ? "macOS Scroll" : "Standard"
-                                    font { family: "Inter"; pixelSize: 11 }
-                                    color: controlPanelWindow.naturalScrollEnabled ? Qt.darker(controlPanelWindow.bgColor, 1.4) : controlPanelWindow.fgColor
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-                    }
-
-                    // ── 6. Tap to Click Pill ──
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 52
-                        radius: 16
-                        color: controlPanelWindow.tapToClickEnabled ? controlPanelWindow.accentColor : controlPanelWindow.bgColor2
-                        Behavior on color { ColorAnimation { duration: 180 } }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: controlPanelWindow.toggleTapToClick()
-                        }
-
-                        RowLayout {
-                            anchors {
-                                fill: parent
-                                leftMargin: 14
-                                rightMargin: 14
-                            }
-                            spacing: 12
-
-                            Text {
-                                text: "\uf245" // hand-pointer
-                                font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 15 }
-                                color: controlPanelWindow.tapToClickEnabled ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 1
-
-                                Text {
-                                    text: "Tap to Click"
-                                    font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
-                                    color: controlPanelWindow.tapToClickEnabled ? controlPanelWindow.bgColor : "#FFFFFF"
-                                    elide: Text.ElideRight
-                                }
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: controlPanelWindow.tapToClickEnabled ? "Enabled" : "Physical Only"
-                                    font { family: "Inter"; pixelSize: 11 }
-                                    color: controlPanelWindow.tapToClickEnabled ? Qt.darker(controlPanelWindow.bgColor, 1.4) : controlPanelWindow.fgColor
-                                    elide: Text.ElideRight
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: controlPanelWindow.setDisplay(modelData.output, controlPanelWindow.displayMode)
                                 }
                             }
                         }
@@ -3622,7 +3538,7 @@ PanelWindow {
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             Text {
-                                text: "hyprland.conf"
+                                text: "hyprland.lua"
                                 font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
                                 color: controlPanelWindow.fgColor
                                 anchors.verticalCenter: parent.verticalCenter
@@ -3636,7 +3552,7 @@ PanelWindow {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 controlPanelWindow.closeRequested()
-                                Quickshell.execDetached(["ghostty", "-e", "vim", Quickshell.env("HOME") + "/.config/hypr/hyprland.conf"])
+                                Quickshell.execDetached(["ghostty", "-e", "vim", Quickshell.env("HOME") + "/.config/hypr/hyprland.lua"])
                             }
                         }
                     }

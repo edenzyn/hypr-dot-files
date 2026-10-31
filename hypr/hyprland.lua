@@ -5,14 +5,70 @@
 ---- MONITORS ----
 ------------------
 
--- laptop left and primary
-hl.monitor({ output = "eDP-1",    mode = "1920x1080@120.21", position = "0x0",    scale = 1 })
-hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@100",    position = "1920x0", scale = 1 })
+-- Layout is picked in the control panel (Settings → Display) and saved to
+-- ~/.local/state/hypr/display as two lines: primary=<output> and mode=<mode>.
+--   mode: extend (primary on the left) | mirror | laptop (laptop only) | monitor (monitor only)
+local LAPTOP, MONITOR = "eDP-1", "HDMI-A-1"
+local MODES = { [LAPTOP] = "1920x1080@120.21", [MONITOR] = "1920x1080@100" }
+local DISPLAY_STATE = os.getenv("HOME") .. "/.local/state/hypr/display"
 
--- monitor left and primary
--- hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@100",    position = "0x0",    scale = 1 })
--- hl.monitor({ output = "eDP-1",    mode = "1920x1080@120.21", position = "1920x0", scale = 1 })
--- hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-1", default = true })
+local function readDisplayState()
+    local st = { primary = MONITOR, mode = "extend" }
+    local f = io.open(DISPLAY_STATE, "r")
+    if f then
+        for line in f:lines() do
+            local k, v = line:match("^(%w+)=(%S+)$")
+            if k then st[k] = v end
+        end
+        f:close()
+    end
+    return st
+end
+
+local function monitorConnected(name)
+    local ok, mons = pcall(hl.get_monitors, { all = true })
+    if not ok or not mons or #mons == 0 then return nil end -- unknown (e.g. very early at startup)
+    for _, m in ipairs(mons) do
+        if m.name == name then return true end
+    end
+    return false
+end
+
+local function applyDisplays()
+    local st = readDisplayState()
+    local primary = (st.primary == LAPTOP) and LAPTOP or MONITOR
+    local other = (primary == LAPTOP) and MONITOR or LAPTOP
+    local mode = st.mode
+
+    -- Never turn the laptop screen off unless the monitor is really plugged in
+    if mode == "monitor" and monitorConnected(MONITOR) ~= true then mode = "extend" end
+
+    local function show(output, position)
+        hl.monitor({ output = output, mode = MODES[output], position = position, scale = 1 })
+    end
+
+    if mode == "laptop" then
+        show(LAPTOP, "0x0")
+        hl.monitor({ output = MONITOR, disabled = true })
+    elseif mode == "monitor" then
+        show(MONITOR, "0x0")
+        hl.monitor({ output = LAPTOP, disabled = true })
+    elseif mode == "mirror" then
+        show(primary, "0x0")
+        hl.monitor({ output = other, mode = MODES[other], position = "auto", scale = 1, mirror = primary })
+    else -- extend: primary on the left
+        show(primary, "0x0")
+        show(other, "1920x0")
+    end
+    hl.workspace_rule({ workspace = "1", monitor = primary, default = true })
+end
+
+applyDisplays()
+
+-- Unplugging the monitor while the laptop screen is off: bring the laptop screen back
+hl.on("monitor.removed", function()
+    if readDisplayState().mode == "monitor" then hl.dispatch(hl.dsp.reload_config()) end
+end)
 
 
 ---------------------

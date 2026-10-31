@@ -18,6 +18,20 @@ Scope {
 
     readonly property var barPanelWindow: barWindow
 
+    // ─── Primary display (shared with hyprland.lua) ──────────
+    // ~/.local/state/hypr/display holds "primary=<output>" and "mode=<mode>"
+    property string primaryOutput: "HDMI-A-1"
+    FileView {
+        id: displayStateFile
+        path: Quickshell.env("HOME") + "/.local/state/hypr/display"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            let m = text().match(/primary=(\S+)/)
+            if (m) root.primaryOutput = m[1]
+        }
+    }
+
     // ─── Full Media Player Popup State ────────────────────────
     property bool showFullPlayer: false
 
@@ -100,11 +114,8 @@ Scope {
     PanelWindow {
         id: barWindow
 
-        // ## top bar on monitor
-		// screen: Quickshell.screens.find(s => s.name === "HDMI-A-1")
-		
-		// ## top bar on laptop screen
-		screen: Quickshell.screens.find(s => s.name === "eDP-1")
+        // Bar lives on the primary display (Control Panel → Settings → Display)
+        screen: Quickshell.screens.find(s => s.name === root.primaryOutput) || Quickshell.screens[0]
         anchors {
             top: true
             left: true
@@ -178,12 +189,12 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 color: root.bgColor2
                 radius: Math.round(30 * root.barScale)
-                
+
                 Row {
                     id: wsRow
                     anchors.centerIn: parent
                     spacing: Math.round(6 * root.barScale)
-                    
+
                     Repeater {
                         model: {
                             let list = Hyprland.workspaces.values.slice()
@@ -194,7 +205,7 @@ Scope {
                             width: Math.round(18 * root.barScale)
                             height: Math.round(18 * root.barScale)
                             readonly property bool isActive: Hyprland.focusedWorkspace && modelData.id === Hyprland.focusedWorkspace.id
-                            
+
                             Rectangle {
                                 id: wsCircle
                                 anchors.fill: parent
@@ -203,7 +214,7 @@ Scope {
                                 border { width: 1; color: isActive ? root.accentColor : (wsMouse.containsMouse ? root.accentColorGlow : Qt.rgba(205/255, 214/255, 244/255, 0.35)) }
                                 Behavior on color { ColorAnimation { duration: 120 } }
                             }
-                            
+
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData.id
@@ -252,11 +263,11 @@ Scope {
            Rectangle {
                 id: titlePill
                 anchors.verticalCenter: parent.verticalCenter
-                
+
                 // 1. The Visibility Condition
                 // Leave this as 'true' to always show the pill (and just animate width changes).
                 // Change it to 'ToplevelManager.activeToplevel?.activated ?? false' to hide it on an empty desktop.
-                property bool showPill: true 
+                property bool showPill: true
 
                 // 2. The Visibility Trick
                 visible: opacity > 0
@@ -268,7 +279,7 @@ Scope {
                 height: Math.round(26 * root.barScale)
                 color: root.bgColor2
                 radius: Math.round(30 * root.barScale)
-                
+
                 // 4. The Animations
                 Behavior on opacity {
                     NumberAnimation { duration: 250; easing.type: Easing.InOutQuad }
@@ -281,13 +292,13 @@ Scope {
                     id: titleRow
                     anchors.centerIn: parent
                     spacing: Math.round(8 * root.barScale)
-                    
+
                     Text {
                         text: (ToplevelManager.activeToplevel && ToplevelManager.activeToplevel.activated) ? "\uf2d0" : "\uf015"
                         font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) }
                         color: root.accentColor
                     }
-                    
+
                     Text {
                         text: {
                             let top = ToplevelManager.activeToplevel
@@ -330,7 +341,7 @@ Scope {
             MouseArea {
                 id: btnMouseArea
                 anchors.fill: parent
-                hoverEnabled: true 
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
 
@@ -418,7 +429,7 @@ Scope {
 
                     // Tiny debug (only shows when nothing playing)
                     Text {
-                        // Note: If showPill hides the whole rectangle when there is no active player, 
+                        // Note: If showPill hides the whole rectangle when there is no active player,
                         // you won't actually see this debug text anymore.
                         visible: !root.activePlayer && Mpris.players.values.length > 0
                         text: "Paused / Stopped (" + Mpris.players.values.length + " players)"
@@ -538,7 +549,7 @@ Scope {
                         }
                     }
                 }
-                
+
                 Row {
                     id: statusRow
                     anchors.centerIn: parent
@@ -611,7 +622,7 @@ Scope {
                             topPadding: 1.5
                             text: `${Math.round(UPower.displayDevice.percentage * 100)}%`
                             color: root.fgColor
-                            font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold } 
+                            font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold }
                         }
                     }
                 }
@@ -679,8 +690,8 @@ Scope {
                         }
                     }
                 }
-                
-      
+
+
             }
 
    Rectangle {
@@ -691,7 +702,7 @@ Scope {
     color: root.bgColor2
     radius: Math.round(30 * root.barScale)
 
-    
+
     // 1. Timer to poll data every 2 seconds
     Timer {
         interval: 2000
@@ -711,7 +722,7 @@ Scope {
     Process {
         id: ramProc
         command: ["sh", "-c", "free -h | awk '/^Mem:/ {print $3}'"]
-        running: true 
+        running: true
         stdout: StdioCollector {
             onStreamFinished: ramText.text = this.text.trim() + "B" // This will output something like "4.2GiB"
         }
@@ -721,7 +732,7 @@ Scope {
     Process {
         id: cpuProc
         command: ["sh", "-c", "top -bn1 | grep 'Cpu(s)' | awk '{print $2}'"]
-        running: true 
+        running: true
         stdout: StdioCollector {
             onStreamFinished: cpuText.text = this.text.trim() + "%"
         }
@@ -732,7 +743,7 @@ Scope {
         id: tempProc
         // Reads raw thermal data, divides by 1000, and converts to integer
         command: ["sh", "-c", "awk '{print int($1/1000)}' /sys/class/thermal/thermal_zone0/temp"]
-        running: true 
+        running: true
         stdout: StdioCollector {
             onStreamFinished: tempText.text = this.text.trim() + "°C"
         }
@@ -742,7 +753,7 @@ Scope {
     Process {
         id: gpuProc
         command: ["sh", "-c", "if [ \"$(cat /sys/bus/pci/devices/0000:01:00.0/power/runtime_status 2>/dev/null)\" = \"suspended\" ]; then echo 0; else u=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -n 1); echo \"${u:-0}\"; fi"]
-        running: true 
+        running: true
         stdout: StdioCollector {
             onStreamFinished: {
                 var v = this.text.trim()
@@ -756,22 +767,22 @@ Scope {
         id: sysRow
         anchors.centerIn: parent
         spacing: Math.round(12 * root.barScale)
-        
+
         // --- CPU Section ---
         Row {
             spacing: Math.round(6 * root.barScale)
-            Text { 
+            Text {
                 topPadding: 1.3
-                text: "\uf2db" 
-                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) } 
-                color: root.accentColor 
+                text: "\uf2db"
+                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) }
+                color: root.accentColor
             }
-            Text { 
+            Text {
                 topPadding: 1.3
                 id: cpuText
-                text: "..." 
+                text: "..."
                 color: root.fgColor
-                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold } 
+                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold }
             }
         }
 
@@ -779,16 +790,16 @@ Scope {
         Row {
             spacing: Math.round(6 * root.barScale)
             topPadding: 1.3
-            Text { 
+            Text {
                 text: "" // Thermometer icon (nf-fa-thermometer_half)
-                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) } 
-                color: root.accentColor 
+                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) }
+                color: root.accentColor
             }
-            Text { 
+            Text {
                 id: tempText
-                text: "..." 
+                text: "..."
                 color: root.fgColor
-                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold } 
+                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold }
             }
         }
 
@@ -796,16 +807,16 @@ Scope {
         Row {
             spacing: Math.round(6 * root.barScale)
             topPadding: 1.3
-            Text { 
-                text: "󰢮" 
-                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) } 
-                color: root.accentColor 
+            Text {
+                text: "󰢮"
+                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) }
+                color: root.accentColor
             }
-            Text { 
+            Text {
                 id: gpuText
-                text: "..." 
+                text: "..."
                 color: root.fgColor
-                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold } 
+                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold }
             }
         }
 
@@ -813,16 +824,16 @@ Scope {
         Row {
             spacing: Math.round(6 * root.barScale)
             topPadding: 1.3
-            Text { 
-                text: "" 
-                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) } 
-                color: root.accentColor 
+            Text {
+                text: ""
+                font { family: "JetBrainsMono NF"; weight: Font.Bold; pixelSize: Math.round(12 * root.barScale) }
+                color: root.accentColor
             }
-            Text { 
+            Text {
                 id: ramText
-                text: "..." 
+                text: "..."
                 color: root.fgColor
-                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold } 
+                font { family: "Inter"; pixelSize: Math.round(12 * root.barScale); weight: Font.Bold }
             }
         }
     }

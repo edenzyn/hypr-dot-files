@@ -13,6 +13,8 @@ PanelWindow {
     property bool isOpen: false
 
     property var barWindowRef: null // bar clicks pass through the focus grab
+
+    screen: barWindowRef ? barWindowRef.screen : null // open on the bar's screen
     signal closeRequested()
     signal newNotification(var notif)
 

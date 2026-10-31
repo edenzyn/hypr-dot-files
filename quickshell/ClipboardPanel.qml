@@ -15,6 +15,8 @@ PanelWindow {
 
     property var barWindowRef: null // bar clicks pass through the focus grab
 
+    screen: barWindowRef ? barWindowRef.screen : null // open on the bar's screen
+
     function toggle() { isOpen = !isOpen }
     function open() { isOpen = true }
     function close() { isOpen = false }

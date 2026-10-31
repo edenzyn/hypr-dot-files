@@ -337,8 +337,9 @@ Scope {
             id: centerPill
             anchors.centerIn: parent
 
-            // 1. Define your visibility condition here
-            property bool showPill: true
+            // 1. Only while something has media (shrinks away when nothing is playing);
+            //    stays while the media popup is open
+            property bool showPill: (!!root.activePlayer && root.hasMedia(root.activePlayer)) || root.showFullPlayer
 
             // 2. The Visibility Trick: Only hide it when the opacity hits exactly 0
             visible: opacity > 0
@@ -348,6 +349,8 @@ Scope {
             // We use 'clip: true' so the text doesn't spill out while it's shrinking
             clip: true
             width: showPill ? Math.min(centerContentRow.implicitWidth + Math.round(32 * root.barScale), maxAvailableWidth) : 0
+            Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 180 } }
             height: Math.round(26 * root.barScale)
             color: root.showFullPlayer ? Qt.lighter(root.pillColor, 1.4) : (btnMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
             radius: Math.round(30 * root.barScale)

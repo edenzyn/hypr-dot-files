@@ -32,6 +32,36 @@ case "$1" in
         elif [ "$n" -gt 0 ]; then echo "$n pending  (sudo pacman -Syu)"
         else echo "system up to date"; fi
         ;;
+    cpu)
+        # "<model>  ·  <usage>%" (usage sampled over 0.15 s)
+        model=$(sed -n 's/^model name\s*: //p' /proc/cpuinfo | head -1 | sed -e 's/ with .*//' -e 's/ [0-9]*-Core Processor//')
+        read -r _ a1 a2 a3 a4 a5 a6 a7 _ < /proc/stat; sleep 0.15
+        read -r _ b1 b2 b3 b4 b5 b6 b7 _ < /proc/stat
+        idle=$(( (b4 + b5) - (a4 + a5) ))
+        total=$(( (b1+b2+b3+b4+b5+b6+b7) - (a1+a2+a3+a4+a5+a6+a7) ))
+        echo "$model  ·  $(( total > 0 ? 100 * (total - idle) / total : 0 ))%"
+        ;;
+    gpu)
+        busy=""; other=""
+        # One line per GPU: usage % where the driver reports it (amdgpu, i915/xe),
+        # otherwise active/sleeping (read without waking e.g. an NVIDIA dGPU)
+        for c in /sys/class/drm/card[0-9]*; do
+            [ -e "$c/device/vendor" ] || continue
+            name=$(lspci -s "$(basename "$(readlink -f "$c/device")")" -mm 2>/dev/null \
+                   | awk -F'"' '{print $6}' | grep -o '\[[^]]*\]' | tr -d '[]' | sed 's| / .*||')
+            [ -z "$name" ] && continue
+            if [ -r "$c/device/gpu_busy_percent" ]; then
+                busy+="$name  ·  $(cat "$c/device/gpu_busy_percent")%"$'\n'
+            else
+                state=$(cat "$c/device/power/runtime_status" 2>/dev/null)
+                [ "$state" = suspended ] && state="sleeping"
+                other+="$name  ·  ${state:-on}"$'\n'
+            fi
+        done
+        # GPUs with a usage % first; `greet.sh gpu N` prints only line N
+        out="${busy:-}${other:-}"
+        if [ -n "${2:-}" ]; then sed -n "${2}p" <<<"$out"; else printf '%s' "$out"; fi
+        ;;
     quote)
         shuf -n 1 <<'EOF'
 Talk is cheap. Show me the code.  - Linus Torvalds

@@ -40,10 +40,11 @@
 
     // Hardware
     { "type": "custom", "format": "╭─ 󰍛  Hardware", "outputColor": "1" },
-    { "type": "cpu",      "key": "├─ CPU",     "format": "{name}" },
-    { "type": "gpu",      "key": "├─ GPU",     "format": "{name}", "hideType": "integrated" },
-    { "type": "memory",   "key": "├─ Memory",  "format": "{used} / {total}" },
-    { "type": "disk",     "key": "╰─ Disk",    "folders": "/", "format": "{size-used} / {size-total}" },
+    { "type": "command",  "key": "├─ CPU",     "text": "~/.config/fastfetch/greet.sh cpu" },
+    { "type": "command",  "key": "├─ GPU",     "text": "~/.config/fastfetch/greet.sh gpu 1" },
+    { "type": "command",  "key": "├─ dGPU",    "text": "~/.config/fastfetch/greet.sh gpu 2" },
+    { "type": "memory",   "key": "├─ Memory",  "format": "{used} / {total}  ·  {percentage}" },
+    { "type": "disk",     "key": "╰─ Disk",    "folders": "/", "format": "{size-used} / {size-total}  ·  {size-percentage}" },
     "break",
 
     // Quote

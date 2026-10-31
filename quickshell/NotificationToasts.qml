@@ -355,11 +355,13 @@ PanelWindow {
                             elide: Text.ElideRight
                         }
 
-                        // ─── Attached Image Preview (if present) ─────
+                        // ─── Attached Image Preview: off ─────────────
+                        // Chat apps (ZapZap/WhatsApp) attach the sender's or group's
+                        // profile photo here, which showed as a big banner. Text only.
                         Image {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 120
-                            visible: modelData.image !== "" && status === Image.Ready
+                            visible: false
                             source: modelData.image
                             fillMode: Image.PreserveAspectCrop
                             clip: true
@@ -367,12 +369,16 @@ PanelWindow {
 
                         // ─── Action Buttons ──────────────────────────
                         RowLayout {
+                            id: actionRow
                             Layout.fillWidth: true
                             spacing: 6
-                            visible: modelData.actions && modelData.actions.length > 0
+                            // Skip unlabeled actions (e.g. ZapZap's "default" click action
+                            // showed up as an empty button)
+                            readonly property var labeledActions: (modelData.actions || []).filter(a => a.text && a.text.trim() !== "")
+                            visible: labeledActions.length > 0
 
                             Repeater {
-                                model: modelData.actions
+                                model: actionRow.labeledActions
 
                                 delegate: Rectangle {
                                     Layout.fillWidth: true

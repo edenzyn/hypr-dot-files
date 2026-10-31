@@ -665,11 +665,11 @@ PanelWindow {
                                         elide: Text.ElideRight
                                     }
 
-                                    // Image
+                                    // Image preview: off (chat apps attach big profile photos)
                                     Image {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 120
-                                        visible: (!groupCard.isGroup && groupData.items.length > 0 && groupData.items[0].image !== "" && status === Image.Ready)
+                                        visible: false
                                         source: (!groupCard.isGroup && groupData.items.length > 0) ? groupData.items[0].image : ""
                                         fillMode: Image.PreserveAspectCrop
                                         clip: true
@@ -679,10 +679,10 @@ PanelWindow {
                                     RowLayout {
                                         Layout.fillWidth: true
                                         spacing: 6
-                                        visible: (!groupCard.isGroup && groupData.items.length > 0 && groupData.items[0].actions && groupData.items[0].actions.length > 0)
+                                        visible: (!groupCard.isGroup && groupData.items.length > 0 && (groupData.items[0].actions || []).some(a => a.text && a.text.trim() !== ""))
 
                                         Repeater {
-                                            model: (!groupCard.isGroup && groupData.items.length > 0) ? groupData.items[0].actions : []
+                                            model: (!groupCard.isGroup && groupData.items.length > 0) ? (groupData.items[0].actions || []).filter(a => a.text && a.text.trim() !== "") : [] // skip unlabeled actions
 
                                             delegate: Rectangle {
                                                 Layout.fillWidth: true
@@ -968,11 +968,11 @@ PanelWindow {
                                                     elide: Text.ElideRight
                                                 }
 
-                                                // Image
+                                                // Image preview: off (chat apps attach big profile photos)
                                                 Image {
                                                     Layout.fillWidth: true
                                                     Layout.preferredHeight: 100
-                                                    visible: nestedItem.image !== "" && status === Image.Ready
+                                                    visible: false
                                                     source: nestedItem.image
                                                     fillMode: Image.PreserveAspectCrop
                                                     clip: true
@@ -982,10 +982,10 @@ PanelWindow {
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    visible: nestedItem.actions && nestedItem.actions.length > 0
+                                                    visible: (nestedItem.actions || []).some(a => a.text && a.text.trim() !== "")
 
                                                     Repeater {
-                                                        model: nestedItem.actions || []
+                                                        model: (nestedItem.actions || []).filter(a => a.text && a.text.trim() !== "") // skip unlabeled actions
 
                                                         delegate: Rectangle {
                                                             Layout.fillWidth: true

@@ -775,7 +775,73 @@ PanelWindow {
 
     // Night light state is saved here so it survives logins and Quickshell reloads
     readonly property string nightLightStateFile: Quickshell.env("HOME") + "/.local/state/quickshell/nightlight"
-    readonly property int nightLightTemp: 4800 // Kelvin, lower = warmer (6500 = no tint)
+    property int nightLightTemp: 4800 // Kelvin, lower = warmer (6500 = no tint); set in Settings
+    readonly property string nightLightTempFile: Quickshell.env("HOME") + "/.local/state/quickshell/nightlight-temp"
+
+    function setNightLightTemp(k) {
+        k = Math.round(Math.max(3000, Math.min(6000, k)) / 100) * 100
+        if (k === nightLightTemp) return
+        nightLightTemp = k
+        if (nightLightActive) Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", String(k)])
+        nightLightTempSave.restart()
+    }
+
+    // Save the warmth once the slider stops moving
+    Timer {
+        id: nightLightTempSave
+        interval: 600
+        onTriggered: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" > \"$1\"", "sh",
+            controlPanelWindow.nightLightTempFile, String(controlPanelWindow.nightLightTemp)])
+    }
+
+    Process {
+        id: nightLightTempInitProc
+        running: true
+        command: ["cat", controlPanelWindow.nightLightTempFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let k = parseInt(text.trim())
+                if (k >= 3000 && k <= 6000) {
+                    controlPanelWindow.nightLightTemp = k
+                    if (controlPanelWindow.nightLightActive) controlPanelWindow.applyNightLight()
+                }
+            }
+        }
+    }
+
+    // ── Game Mode: no animations/blur/shadows/gaps for max performance ──
+    // Kept for the session ($XDG_RUNTIME_DIR is cleared on logout/reboot)
+    property bool gameModeActive: false
+    readonly property string gameModeStateFile: Quickshell.env("XDG_RUNTIME_DIR") + "/quickshell-gamemode"
+
+    function applyGameMode() {
+        if (gameModeActive) {
+            Quickshell.execDetached(["hyprctl", "eval",
+                "hl.config({ animations = { enabled = false }, decoration = { blur = { enabled = false }, shadow = { enabled = false }, rounding = 0 }, general = { gaps_in = 0, gaps_out = 0, border_size = 1 } })"])
+        } else {
+            Quickshell.execDetached(["hyprctl", "reload"]) // back to hyprland.lua values
+        }
+    }
+
+    function toggleGameMode() {
+        gameModeActive = !gameModeActive
+        applyGameMode()
+        Quickshell.execDetached(["sh", "-c", "echo \"$2\" > \"$1\"", "sh", gameModeStateFile, gameModeActive ? "1" : "0"])
+    }
+
+    Process {
+        id: gameModeInitProc
+        running: true
+        command: ["cat", controlPanelWindow.gameModeStateFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.trim() === "1") {
+                    controlPanelWindow.gameModeActive = true
+                    controlPanelWindow.applyGameMode()
+                }
+            }
+        }
+    }
 
     // hyprsunset tints in display hardware (no GPU cost). It only runs while
     // night light is on; when it exits Hyprland restores normal colors.
@@ -806,6 +872,7 @@ PanelWindow {
         target: Hyprland
         function onRawEvent(event) {
             if (event.name === "configreloaded" && controlPanelWindow.nightLightActive) controlPanelWindow.applyNightLight()
+            if (event.name === "configreloaded" && controlPanelWindow.gameModeActive) controlPanelWindow.applyGameMode()
         }
     }
 
@@ -2039,60 +2106,6 @@ PanelWindow {
                                 if (pressed) {
                                     let ratio = Math.max(0.01, Math.min(1.0, mouse.x / width))
                                     controlPanelWindow.setBrightness(ratio)
-                                }
-                            }
-                        }
-                    }
-                }
-                // ─── 4. Quick Actions ─────────────────────────
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 2
-                    spacing: 8
-
-                    Repeater {
-                        model: [
-                            { icon: "\uf125", label: "Area shot",  cmd: "sleep 0.4; ~/.config/hypr/screenshot.sh" },
-                            { icon: "\uf108", label: "Full shot",  cmd: "sleep 0.4; ~/.config/hypr/screenshot.sh screen" },
-                            { icon: "\uf0ea", label: "Clipboard",  cmd: "sleep 0.3; qs ipc call clipboard open" },
-                            { icon: "\uf03e", label: "Wallpaper",  cmd: "sleep 0.3; qs ipc call wallpaper toggle" },
-                            { icon: "\uf023", label: "Lock",       cmd: "sleep 0.3; hyprlock" }
-                        ]
-
-                        Rectangle {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 58
-                            radius: 16
-                            color: qaArea.containsMouse ? Qt.lighter(controlPanelWindow.bgColor2, 1.4) : controlPanelWindow.bgColor2
-                            Behavior on color { ColorAnimation { duration: 120 } }
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 5
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: modelData.icon
-                                    font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 14 }
-                                    color: qaArea.containsMouse ? controlPanelWindow.accentColor : controlPanelWindow.fgColor
-                                }
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: modelData.label
-                                    font { family: "Inter"; pixelSize: 10; weight: Font.Bold }
-                                    color: controlPanelWindow.fgColor
-                                }
-                            }
-
-                            MouseArea {
-                                id: qaArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    // Close first so the panel isn't in screenshots / doesn't cover things
-                                    controlPanelWindow.closeRequested()
-                                    Quickshell.execDetached(["sh", "-c", modelData.cmd])
                                 }
                             }
                         }
@@ -3483,6 +3496,105 @@ PanelWindow {
                         }
                     }
 
+                    // ── 3. Game Mode Pill (full width) ──
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.columnSpan: 2
+                        Layout.preferredHeight: 52
+                        radius: 16
+                        color: controlPanelWindow.gameModeActive ? controlPanelWindow.accentColor : controlPanelWindow.bgColor2
+                        Behavior on color { ColorAnimation { duration: 180 } }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: controlPanelWindow.toggleGameMode()
+                        }
+
+                        RowLayout {
+                            anchors {
+                                fill: parent
+                                leftMargin: 14
+                                rightMargin: 14
+                            }
+                            spacing: 12
+
+                            Text {
+                                text: "\uf11b" // gamepad
+                                font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 15 }
+                                color: controlPanelWindow.gameModeActive ? controlPanelWindow.bgColor : controlPanelWindow.fgColor
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 1
+
+                                Text {
+                                    text: "Game Mode"
+                                    font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                                    color: controlPanelWindow.gameModeActive ? controlPanelWindow.bgColor : "#FFFFFF"
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: controlPanelWindow.gameModeActive ? "On - no animations, blur, shadows or gaps" : "Off - max performance for games"
+                                    font { family: "Inter"; pixelSize: 11 }
+                                    color: controlPanelWindow.gameModeActive ? Qt.darker(controlPanelWindow.bgColor, 1.4) : controlPanelWindow.fgColor
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ─── Night light warmth (only while night light is on) ───
+                Rectangle {
+                    id: warmthBar
+                    visible: controlPanelWindow.nightLightActive
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 46
+                    radius: 23
+                    color: controlPanelWindow.bgColor2
+                    clip: true
+
+                    // 3000K (warmest) on the right, 6000K (subtle) on the left
+                    readonly property real ratio: (6000 - controlPanelWindow.nightLightTemp) / 3000
+
+                    Rectangle {
+                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                        width: Math.max(46, parent.width * warmthBar.ratio)
+                        radius: 23
+                        color: "#F9C784" // warm amber
+                    }
+
+                    RowLayout {
+                        anchors { fill: parent; leftMargin: 16; rightMargin: 16 }
+                        Text {
+                            text: "\uf185" // sun
+                            font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 13 }
+                            color: controlPanelWindow.bgColor
+                        }
+                        Text {
+                            text: "Warmth"
+                            font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                            color: controlPanelWindow.bgColor
+                        }
+                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: controlPanelWindow.nightLightTemp + "K"
+                            font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                            color: "#FFFFFF"
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        function setFrom(x) { controlPanelWindow.setNightLightTemp(6000 - Math.max(0, Math.min(1, x / width)) * 3000) }
+                        onPressed: (mouse) => setFrom(mouse.x)
+                        onPositionChanged: (mouse) => { if (pressed) setFrom(mouse.x) }
+                        onWheel: (wheel) => controlPanelWindow.setNightLightTemp(controlPanelWindow.nightLightTemp + (wheel.angleDelta.y > 0 ? -100 : 100))
+                    }
                 }
 
                 // ─── Display: projection mode + primary display ───

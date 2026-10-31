@@ -1,7 +1,7 @@
-# EdenHypr
+# Hyprland Setup
 
 **The complete Hyprland setup** · Hyprland + Quickshell + ghostty + fish + starship + fastfetch
-© 2026 EDEN
+by **EDEN**
 
 - Floating pill bar with media, tray, notifications, control panel, calendar
 - Control panel: Wi-Fi/Bluetooth/audio, night light + warmth, caffeine, game mode,
@@ -30,11 +30,11 @@ The installer asks:
 4. **Weather city** for the terminal card (empty = detect automatically).
 
 It then installs packages (official repos first, AUR via `yay`/`paru`), backs up your
-current configs to `~/.config/eden-backup-<date>/`, copies EdenHypr in, and adapts it to
+current configs to `~/.config/hyprland-setup-backup-<date>/`, copies the setup in, and adapts it to
 your machine (your home folder, monitor names, highest refresh rate). Log out and pick
 **Hyprland** at the login screen.
 
-**Undo:** copy the folders from `~/.config/eden-backup-<date>/` back into `~/.config/`.
+**Undo:** copy the folders from `~/.config/hyprland-setup-backup-<date>/` back into `~/.config/`.
 
 ## Shortcuts
 
@@ -54,7 +54,7 @@ your machine (your home folder, monitor names, highest refresh rate). Log out an
 ## Layout
 
 ```
-install.sh                  EdenHypr installer
+install.sh                  installer
 hypr/
 ├── hyprland.lua            Hyprland: monitors, autostart, look, rules, keybinds
 ├── hypridle.conf           dim / lock / screen off / suspend timers

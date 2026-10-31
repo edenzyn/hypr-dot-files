@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ╭──────────────────────────────────────────────────────────────╮
-# │  EdenHypr · the complete Hyprland setup                      │
+# │  Hyprland Setup · by EDEN                                    │
 # │  Hyprland + Quickshell + ghostty + fish + starship + fastfetch│
-# │  © 2026 EDEN · https://github.com/edenzyn/hypr-dot-files      │
+# │  https://github.com/edenzyn/hypr-dot-files                    │
 # ╰──────────────────────────────────────────────────────────────╯
 #
 #   ./install.sh            interactive install
@@ -47,7 +47,8 @@ ask_choice() {  # ask_choice "Question" option1 option2 ... -> echoes the chosen
     printf '%s\n' "   $q" >&2
     for o in "$@"; do printf '%s\n' "     ${BOLD}$i${RESET}) $o" >&2; i=$((i + 1)); done
     while true; do
-        read -rp "   Choose [1-$#]: " a || true
+        # No more input (e.g. piped/closed stdin): stop instead of looping forever
+        read -rp "   Choose [1-$#]: " a || { echo >&2; warn "No input, stopping (nothing was changed)." >&2; exit 1; }
         if [[ "$a" =~ ^[0-9]+$ ]] && [ "$a" -ge 1 ] && [ "$a" -le $# ]; then echo "$a"; return; fi
     done
 }
@@ -55,13 +56,10 @@ ask_choice() {  # ask_choice "Question" option1 option2 ... -> echoes the chosen
 # ── Banner ──────────────────────────────────────────────────────────
 cat <<EOF
 
-${BLUE}${BOLD}   ███████╗██████╗ ███████╗███╗   ██╗██╗  ██╗██╗   ██╗██████╗ ██████╗
-   ██╔════╝██╔══██╗██╔════╝████╗  ██║██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗
-   █████╗  ██║  ██║█████╗  ██╔██╗ ██║███████║ ╚████╔╝ ██████╔╝██████╔╝
-   ██╔══╝  ██║  ██║██╔══╝  ██║╚██╗██║██╔══██║  ╚██╔╝  ██╔═══╝ ██╔══██╗
-   ███████╗██████╔╝███████╗██║ ╚████║██║  ██║   ██║   ██║     ██║  ██║
-   ╚══════╝╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝${RESET}
-   ${DIM}the complete Hyprland setup · © 2026 EDEN${RESET}
+${BLUE}${BOLD}   ╭──────────────────────────────────────────────╮
+   │               Hyprland  Setup                │
+   ╰──────────────────────────────────────────────╯${RESET}
+   ${DIM}Hyprland + Quickshell + ghostty + fish · by EDEN${RESET}
 EOF
 [ "$DRY" = 1 ] && warn "Dry run: nothing will be changed."
 echo
@@ -80,7 +78,7 @@ pacman -Q plasma-workspace >/dev/null 2>&1 && DE="${DE:+$DE + }KDE Plasma"
 MODE="alongside"
 if [ -n "$DE" ]; then
     say "Found ${BOLD}$DE${RESET} on this system."
-    c=$(ask_choice "How should EdenHypr be installed?" \
+    c=$(ask_choice "How should Hyprland Setup be installed?" \
         "Alongside $DE (recommended): pick Hyprland or $DE at the login screen" \
         "Replace $DE: uninstall it and keep only Hyprland")
     [ "$c" = 2 ] && MODE="replace"
@@ -124,7 +122,7 @@ fi
 
 # ── 5. Summary ──────────────────────────────────────────────────────
 STAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP="$CFG/eden-backup-$STAMP"
+BACKUP="$CFG/hyprland-setup-backup-$STAMP"
 echo
 say "Summary"
 note "Install mode:      $MODE${DE:+ ($DE)}"
@@ -183,9 +181,9 @@ else
     for d in "${DIRS[@]}"; do
         [ -e "$CFG/$d" ] && run cp -a "$CFG/$d" "$BACKUP/"
     done
-    # Copy only EdenHypr's files over; anything else in these folders
+    # Copy only this setup's files over; anything else in these folders
     # (e.g. fish_variables, completions) is left alone
-    say "Copying EdenHypr configs"
+    say "Copying Hyprland Setup configs"
     for d in "${DIRS[@]}"; do
         run mkdir -p "$CFG/$d"
         run cp -a "$SRC/$d/." "$CFG/$d/"
@@ -262,7 +260,7 @@ fi
 
 # ── Done ────────────────────────────────────────────────────────────
 echo
-ok "${BOLD}EdenHypr is installed.${RESET}"
+ok "${BOLD}Hyprland Setup is installed.${RESET}"
 note "Log out and pick ${BOLD}Hyprland${RESET}${DIM} at the login screen."
 note "Shortcuts: SUPER+D apps · SUPER+X terminal · SUPER+A control panel · SUPER+W wallpapers"
 [ "$SRC" != "$CFG" ] && note "Your old configs are in $BACKUP"

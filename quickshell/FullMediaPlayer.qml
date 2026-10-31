@@ -621,7 +621,7 @@ PanelWindow {
                     spacing: 10
 
                     Text {
-                        text: popupWindow.musicApps.length > 0 ? "No media playing — open a music app" : "No media playing"
+                        text: popupWindow.musicApps.length > 0 ? "No media playing - open a music app" : "No media playing"
                         font { family: "Inter"; pixelSize: 12; weight: Font.Medium }
                         color: popupWindow.fgColor
                         opacity: 0.8

@@ -1,0 +1,51 @@
+add_newline = true
+
+format = """
+╭─$directory$git_branch$git_status$nodejs$cmd_duration
+╰─$character
+"""
+
+[directory]
+style = "bold blue"
+truncation_length = 3
+truncate_to_repo = false
+
+[git_branch]
+symbol = " 󰘬 "
+style = "bold purple"
+
+[git_status]
+style = "red"
+
+[nodejs]
+symbol = "  "
+style = "green"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+# Show how long a command took, only when it was slow
+[cmd_duration]
+disabled = false
+min_time = 2000
+format = " took [$duration]($style)"
+style = "bold yellow"
+
+[package]
+disabled = true
+
+[aws]
+disabled = true
+
+[gcloud]
+disabled = true
+
+[docker_context]
+disabled = true
+
+[rust]
+disabled = true
+
+[python]
+disabled = true

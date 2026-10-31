@@ -6,6 +6,14 @@
 !/hypr/
 !/quickshell/
 
+# Terminal: ghostty + fish + starship prompt + fastfetch welcome screen
+!/ghostty/
+!/fastfetch/
+!/starship.toml
+!/fish/
+/fish/*
+!/fish/config.fish
+
 # Machine state, changes every time the wallpaper changes
 /hypr/current_wallpaper
 

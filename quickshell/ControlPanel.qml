@@ -751,6 +751,21 @@ PanelWindow {
     // SIGSTOP hypridle, which froze its D-Bus name and hung xdg-desktop-portal-gtk.
     function toggleCaffeine() {
         controlPanelWindow.caffeineActive = !controlPanelWindow.caffeineActive
+        Quickshell.execDetached(["sh", "-c", "echo \"$2\" > \"$1\"", "sh",
+            controlPanelWindow.caffeineStateFile, controlPanelWindow.caffeineActive ? "1" : "0"])
+    }
+
+    // Caffeine survives Quickshell reloads but not logout/reboot:
+    // $XDG_RUNTIME_DIR (/run/user/<uid>) is cleared when the session ends
+    readonly property string caffeineStateFile: Quickshell.env("XDG_RUNTIME_DIR") + "/quickshell-caffeine"
+
+    Process {
+        id: caffeineInitProc
+        running: true
+        command: ["cat", controlPanelWindow.caffeineStateFile]
+        stdout: StdioCollector {
+            onStreamFinished: controlPanelWindow.caffeineActive = (text.trim() === "1")
+        }
     }
 
     IdleInhibitor {
@@ -2024,6 +2039,60 @@ PanelWindow {
                                 if (pressed) {
                                     let ratio = Math.max(0.01, Math.min(1.0, mouse.x / width))
                                     controlPanelWindow.setBrightness(ratio)
+                                }
+                            }
+                        }
+                    }
+                }
+                // ─── 4. Quick Actions ─────────────────────────
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 2
+                    spacing: 8
+
+                    Repeater {
+                        model: [
+                            { icon: "\uf125", label: "Area shot",  cmd: "sleep 0.4; ~/.config/hypr/screenshot.sh" },
+                            { icon: "\uf108", label: "Full shot",  cmd: "sleep 0.4; ~/.config/hypr/screenshot.sh screen" },
+                            { icon: "\uf0ea", label: "Clipboard",  cmd: "sleep 0.3; qs ipc call clipboard open" },
+                            { icon: "\uf03e", label: "Wallpaper",  cmd: "sleep 0.3; qs ipc call wallpaper toggle" },
+                            { icon: "\uf023", label: "Lock",       cmd: "sleep 0.3; hyprlock" }
+                        ]
+
+                        Rectangle {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 58
+                            radius: 16
+                            color: qaArea.containsMouse ? Qt.lighter(controlPanelWindow.bgColor2, 1.4) : controlPanelWindow.bgColor2
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: modelData.icon
+                                    font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 14 }
+                                    color: qaArea.containsMouse ? controlPanelWindow.accentColor : controlPanelWindow.fgColor
+                                }
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: modelData.label
+                                    font { family: "Inter"; pixelSize: 10; weight: Font.Bold }
+                                    color: controlPanelWindow.fgColor
+                                }
+                            }
+
+                            MouseArea {
+                                id: qaArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    // Close first so the panel isn't in screenshots / doesn't cover things
+                                    controlPanelWindow.closeRequested()
+                                    Quickshell.execDetached(["sh", "-c", modelData.cmd])
                                 }
                             }
                         }

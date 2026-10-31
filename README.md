@@ -1,22 +1,30 @@
-# dotfiles
+# hypr-dot-files
 
-Hyprland + Quickshell desktop.
+Hyprland (Lua config, 0.57+) + Quickshell desktop, plus the terminal setup.
 
-- `hypr/`: Hyprland, hypridle, hyprlock, xdph, wallpaper + screenshot scripts
-- `quickshell/`: bar, launcher, control panel, clipboard, wallpaper, share picker
+- `hypr/`: Hyprland (`hyprland.lua`), hypridle, hyprlock, screen-share picker, wallpaper + screenshot scripts
+- `quickshell/`: floating bar, launcher, control panel, media player, notifications, clipboard, wallpaper picker
+- `ghostty/`, `fish/config.fish`, `starship.toml`, `fastfetch/`: terminal, shell, prompt, welcome screen
 
 ## Restore on a fresh install
 
 ```sh
 cd ~/.config
 git init -b main
-git remote add origin <this repo's URL>
+git remote add origin https://github.com/edenzyn/hypr-dot-files.git
 git fetch origin
-git checkout -f main   # overwrites ~/.config/hypr and ~/.config/quickshell
+git checkout -f main   # overwrites the tracked files above
 ```
 
-Packages used: hyprland hypridle hyprlock hyprpolkitagent xdg-desktop-portal-hyprland
-quickshell cliphist grim slurp wl-clipboard brightnessctl ffmpeg wlrctl wl-kbptr ghostty
+Packages:
+
+```sh
+sudo pacman -S hyprland hypridle hyprlock hyprpolkitagent hyprsunset xdg-desktop-portal-hyprland \
+  quickshell cliphist wl-clipboard grim slurp brightnessctl ffmpeg mpvpaper socat zenity \
+  ghostty fish starship fastfetch eza bat zoxide
+```
+
+Fonts: Rowdies, Inter, Font Awesome 6, JetBrainsMono Nerd Font. Cursor: phinger-cursors.
 
 ## Save changes
 

@@ -292,6 +292,12 @@ hl.bind("XF86AudioLowerVolume",  exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
 hl.bind("XF86AudioMute",         exec("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),        { locked = true })
 hl.bind("XF86AudioMicMute",      exec("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),      { locked = true })
 
+-- Media keys, handled by Quickshell's media player (no playerctl needed)
+hl.bind("XF86AudioPlay",  exec("qs ipc call media playPause"), { locked = true })
+hl.bind("XF86AudioPause", exec("qs ipc call media playPause"), { locked = true })
+hl.bind("XF86AudioNext",  exec("qs ipc call media next"),      { locked = true })
+hl.bind("XF86AudioPrev",  exec("qs ipc call media previous"),  { locked = true })
+
 -- Quickshell
 hl.bind(mainMod .. " + D", hl.dsp.global("quickshell:launcher"))
 -- Fallback IPC trigger if ever needed: hl.bind(mainMod .. " + D", exec("qs ipc call launcher toggle"))

@@ -7,7 +7,30 @@ export LANG="${LANG:-en_US.UTF-8}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$UID}"
 
-FIFO="/run/user/$UID/xdph_picker_fifo_$$"
+# Chrome/Electron apps (Chrome, Discord, Meet...) open two portal sessions per
+# share (one for their own preview, one for the real capture), so the picker
+# used to pop up twice. Reuse the answer if a second request comes right after.
+CACHE="$XDG_RUNTIME_DIR/xdph_picker_last"
+REUSE_SECONDS=15
+
+if [ -f "$CACHE" ]; then
+    AGE=$(( $(date +%s) - $(stat -c %Y "$CACHE") ))
+    LAST=$(cat "$CACHE")
+    if [ "$AGE" -le "$REUSE_SECONDS" ] && [[ "$LAST" =~ ^\[SELECTION\] ]]; then
+        case "$LAST" in
+            *window:*)
+                # Only reuse a window choice if that window still exists
+                HANDLE="${LAST##*window:}"
+                if [[ "$XDPH_WINDOW_SHARING_LIST" == *"$HANDLE"* ]]; then
+                    rm -f "$CACHE"; echo "$LAST"; exit 0
+                fi ;;
+            *)
+                rm -f "$CACHE"; echo "$LAST"; exit 0 ;;
+        esac
+    fi
+fi
+
+FIFO="$XDG_RUNTIME_DIR/xdph_picker_fifo_$$"
 mkfifo "$FIFO"
 trap 'rm -f "$FIFO"' EXIT
 
@@ -21,6 +44,7 @@ fi
 read -r SELECTION < "$FIFO"
 
 if [[ "$SELECTION" =~ ^\[SELECTION\] ]]; then
+    echo "$SELECTION" > "$CACHE"
     echo "$SELECTION"
     exit 0
 fi

@@ -482,7 +482,7 @@ PanelWindow {
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
-                            text: "" // clipboard
+                            text: "" // clipboard
                             font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: 34 }
                             color: Qt.rgba(1, 1, 1, 0.15)
                         }

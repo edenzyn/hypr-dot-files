@@ -440,7 +440,7 @@ Scope {
                             let title = meta["xesam:title"] ? meta["xesam:title"] : (url ? url.split('/').pop() : "Unknown")
                             let artist = meta["xesam:artist"] ?? ""
 
-                            let display = artist ? artist + " — " + title : title
+                            let display = artist ? artist + " - " + title : title
                             return display.length > 65 ? display.substring(0, 62) + "…" : display
                         }
                     }
@@ -982,6 +982,10 @@ Scope {
         function close() {
             root.showFullPlayer = false
         }
+        // Media keys (bound in hyprland.lua), no playerctl needed
+        function playPause() { if (root.activePlayer && root.activePlayer.canTogglePlaying) root.activePlayer.togglePlaying() }
+        function next() { if (root.activePlayer && root.activePlayer.canGoNext) root.activePlayer.next() }
+        function previous() { if (root.activePlayer && root.activePlayer.canGoPrevious) root.activePlayer.previous() }
     }
 
     // ─── Calendar Popup ───────────────────────────────────────

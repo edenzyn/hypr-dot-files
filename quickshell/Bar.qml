@@ -444,16 +444,6 @@ Scope {
                             return display.length > 65 ? display.substring(0, 62) + "…" : display
                         }
                     }
-
-                    // Tiny debug (only shows when nothing playing)
-                    Text {
-                        // Note: If showPill hides the whole rectangle when there is no active player,
-                        // you won't actually see this debug text anymore.
-                        visible: !root.activePlayer && Mpris.players.values.length > 0
-                        text: "Paused / Stopped (" + Mpris.players.values.length + " players)"
-                        font { pixelSize: Math.round(10 * root.barScale) }
-                        color: "#666"
-                    }
                 }
             }
         }

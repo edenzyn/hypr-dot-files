@@ -31,6 +31,16 @@ PanelWindow {
     })
     readonly property bool showSwitcher: allPlayers.length > 1
 
+    // Nothing loaded: show music app shortcuts instead of an empty player
+    readonly property bool noMedia: {
+        if (!player) return true
+        let meta = player.metadata || {}
+        return !player.isPlaying && !(meta["xesam:title"] || meta["xesam:url"] || player.trackTitle)
+    }
+    readonly property var musicApps: DesktopEntries.applications.values
+        .filter(e => e && !e.noDisplay && (e.categories || []).indexOf("Music") >= 0)
+        .sort((a, b) => a.name.localeCompare(b.name))
+
     PwObjectTracker {
         objects: [ Pipewire.defaultAudioSink ]
     }
@@ -602,10 +612,75 @@ PanelWindow {
                     }
                 }
 
+                // ─── Nothing playing: music app shortcuts ──────
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    visible: popupWindow.noMedia
+                    spacing: 10
+
+                    Text {
+                        text: popupWindow.musicApps.length > 0 ? "No media playing — open a music app" : "No media playing"
+                        font { family: "Inter"; pixelSize: 12; weight: Font.Medium }
+                        color: popupWindow.fgColor
+                        opacity: 0.8
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Repeater {
+                            model: popupWindow.musicApps
+
+                            Rectangle {
+                                required property var modelData
+                                width: appRow.implicitWidth + 24
+                                height: 44
+                                radius: 14
+                                color: appArea.containsMouse ? Qt.lighter(popupWindow.bgColor2, 1.4) : popupWindow.bgColor2
+                                Behavior on color { ColorAnimation { duration: 120 } }
+
+                                Row {
+                                    id: appRow
+                                    anchors.centerIn: parent
+                                    spacing: 10
+
+                                    IconImage {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        implicitSize: 24
+                                        source: Quickshell.iconPath(modelData.icon, "audio-x-generic")
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.name
+                                        font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                                        color: "#FFFFFF"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: appArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        modelData.execute()
+                                        popupWindow.closeRequested()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
+                }
+
                 // ─── Middle Section (Cover Art + Info + Seekbar) ─
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    visible: !popupWindow.noMedia
                     spacing: 16
 
                     // Cover Art
@@ -859,6 +934,7 @@ PanelWindow {
 
                 // ─── Bottom Controls Row (PERFECTLY CENTERED) ─
                 RowLayout {
+                    visible: !popupWindow.noMedia
                     Layout.alignment: Qt.AlignHCenter
                     Layout.preferredHeight: 44
                     spacing: 16

@@ -732,7 +732,7 @@ PanelWindow {
                                         }
 
                                         Repeater {
-                                            model: (!groupCard.isGroup && groupData.items.length > 0) ? (groupData.items[0].actions || []).filter(a => a.text && a.text.trim() !== "") : [] // skip unlabeled actions
+                                            model: (!groupCard.isGroup && groupData.items.length > 0) ? (groupData.items[0].actions || []).filter(a => a.text && a.text.trim() !== "" && !/^(show|view|open)$/i.test(a.text.trim())) : [] // skip unlabeled actions
 
                                             delegate: Rectangle {
                                                 Layout.fillWidth: true
@@ -1059,7 +1059,7 @@ PanelWindow {
                                                     }
 
                                                     Repeater {
-                                                        model: (nestedItem.actions || []).filter(a => a.text && a.text.trim() !== "") // skip unlabeled actions
+                                                        model: (nestedItem.actions || []).filter(a => a.text && a.text.trim() !== "" && !/^(show|view|open)$/i.test(a.text.trim())) // skip unlabeled actions
 
                                                         delegate: Rectangle {
                                                             Layout.fillWidth: true

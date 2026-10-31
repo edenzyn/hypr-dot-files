@@ -395,7 +395,7 @@ PanelWindow {
                             spacing: 6
                             // Skip unlabeled actions (e.g. ZapZap's "default" click action
                             // showed up as an empty button)
-                            readonly property var labeledActions: (modelData.actions || []).filter(a => a.text && a.text.trim() !== "")
+                            readonly property var labeledActions: (modelData.actions || []).filter(a => a.text && a.text.trim() !== "" && !/^(show|view|open)$/i.test(a.text.trim()))
                             visible: true // always has Show
 
                             // Show: jump to the app (any screen), open the right chat/view

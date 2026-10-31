@@ -90,10 +90,13 @@ Scope {
     property string iconFont: "JetBrainsMono NF"
     // ─── Media Player Logic ──────────────────────────────────
     property var activePlayer: findActivePlayer()
+    // Player picked in the media popup's switcher; wins until it goes away
+    property var pinnedPlayer: null
 
     function findActivePlayer() {
         let players = Mpris.players.values
         if (players.length === 0) return null
+        if (pinnedPlayer && players.indexOf(pinnedPlayer) >= 0) return pinnedPlayer
 
         // Prefer currently playing
         for (let p of players) {
@@ -942,6 +945,10 @@ Scope {
         barWindowRef: barWindow
         isOpen: root.showFullPlayer
         player: root.activePlayer
+        onPlayerSelected: (p) => {
+            root.pinnedPlayer = p
+            root.activePlayer = p
+        }
         barHeight: barWindow.implicitHeight
         bgColor: root.bgColor
         bgColor2: root.bgColor2

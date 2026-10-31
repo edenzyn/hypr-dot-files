@@ -21,6 +21,10 @@ PanelWindow {
 
 
     property var player: null
+    signal playerSelected(var p)
+    // All MPRIS players; the switcher row shows when there is more than one
+    readonly property var allPlayers: Mpris.players.values
+    readonly property bool showSwitcher: allPlayers.length > 1
 
     PwObjectTracker {
         objects: [ Pipewire.defaultAudioSink ]
@@ -314,7 +318,8 @@ PanelWindow {
         Rectangle {
             id: cardContainer
             width: 440
-            height: 215
+            height: popupWindow.showSwitcher ? 255 : 215
+            Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
             topLeftRadius: bottomLeftRadius
             topRightRadius: bottomRightRadius
             bottomLeftRadius: 24
@@ -521,6 +526,72 @@ PanelWindow {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: popupWindow.closeRequested()
+                        }
+                    }
+                }
+
+                // ─── Player Switcher (only with 2+ players) ──────
+                Flickable {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 28
+                    visible: popupWindow.showSwitcher
+                    contentWidth: switcherRow.implicitWidth
+                    flickableDirection: Flickable.HorizontalFlick
+                    clip: true
+
+                    Row {
+                        id: switcherRow
+                        spacing: 6
+
+                        Repeater {
+                            model: popupWindow.allPlayers
+
+                            Rectangle {
+                                required property var modelData
+                                readonly property bool selected: modelData === popupWindow.player
+                                implicitWidth: chipRow.implicitWidth + 20
+                                implicitHeight: 28
+                                radius: 14
+                                color: selected ? popupWindow.accentColor
+                                     : (chipArea.containsMouse ? Qt.lighter(popupWindow.bgColor2, 1.4) : popupWindow.bgColor2)
+                                Behavior on color { ColorAnimation { duration: 120 } }
+
+                                Row {
+                                    id: chipRow
+                                    anchors.centerIn: parent
+                                    spacing: 6
+
+                                    // Playing dot
+                                    Rectangle {
+                                        width: 6
+                                        height: 6
+                                        radius: 3
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        visible: modelData.isPlaying
+                                        color: selected ? popupWindow.bgColor : popupWindow.accentColor
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: {
+                                            let name = modelData.identity || "Player"
+                                            let title = modelData.trackTitle || ""
+                                            if (title.length > 18) title = title.substring(0, 17) + "…"
+                                            return title ? name + " · " + title : name
+                                        }
+                                        font { family: "Inter"; pixelSize: 11; weight: Font.Bold }
+                                        color: selected ? popupWindow.bgColor : popupWindow.fgColor
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: chipArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: popupWindow.playerSelected(modelData)
+                                }
+                            }
                         }
                     }
                 }

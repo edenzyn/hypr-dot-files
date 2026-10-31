@@ -9,7 +9,7 @@
 
   "logo": {
     "type": "kitty-direct",
-    "source": "~/.config/fastfetch/logo.png",
+    "source": "~/.config/fastfetch/assets/jett.png",
     "width": 24,
     "height": 10,
     "padding": { "top": 1, "left": 2, "right": 4 }

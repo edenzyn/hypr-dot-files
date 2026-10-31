@@ -20,5 +20,5 @@
 # Backup copies
 *.bak
 
-# Personal logo image (cut from wallpaper art), kept local only
-/fastfetch/logo.png
+# Personal logo images (cut from wallpaper art), kept local only
+/fastfetch/assets/

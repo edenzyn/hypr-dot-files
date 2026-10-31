@@ -44,8 +44,8 @@ function fish_greeting
     # Image logo needs the kitty graphics protocol (ghostty, kitty);
     # other terminals (e.g. VS Code) get the small CachyOS text logo
     set -l logo
-    # (also when ~/.config/fastfetch/logo.png is missing, e.g. a fresh install)
-    if not test -f ~/.config/fastfetch/logo.png; or begin; not contains -- "$TERM_PROGRAM" ghostty kitty; and test "$TERM" != xterm-kitty; end
+    # (also when ~/.config/fastfetch/assets/jett.png is missing, e.g. a fresh install)
+    if not test -f ~/.config/fastfetch/assets/jett.png; or begin; not contains -- "$TERM_PROGRAM" ghostty kitty; and test "$TERM" != xterm-kitty; end
         set logo --logo-type builtin --logo CachyOS_small --logo-color-1 $accent --logo-color-2 "#B4BEFE"
     end
 

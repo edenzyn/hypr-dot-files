@@ -18,6 +18,9 @@ PanelWindow {
 
     signal openPanelRequested()
 
+    property var barWindowRef: null
+    screen: barWindowRef ? barWindowRef.screen : null // toasts appear on the bar's screen
+
     anchors {
         top: true
     }
@@ -26,7 +29,7 @@ PanelWindow {
     }
 
     implicitWidth: 440
-    implicitHeight: Math.max(1, toastColumn.implicitHeight + 20)
+    implicitHeight: Math.max(1, toastColumn.implicitHeight + 28)
     color: "transparent"
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
@@ -67,6 +70,7 @@ PanelWindow {
     Column {
         id: toastColumn
         anchors.top: parent.top
+        anchors.topMargin: 8 // gap under the bar
         anchors.horizontalCenter: parent.horizontalCenter
         width: 432
         spacing: 10
@@ -111,6 +115,7 @@ PanelWindow {
 
                 // Left curved fillet joining the card smoothly into the top bar
                 Shape {
+                    visible: false // floating card, no bar fillet
                     width: 16
                     height: 16
                     transform: Scale { origin.y: 8; yScale: -1 }
@@ -140,6 +145,7 @@ PanelWindow {
 
                 // Right curved fillet joining the card smoothly into the top bar
                 Shape {
+                    visible: false // floating card, no bar fillet
                     width: 16
                     height: 16
                     transform: Scale { origin.y: 8; yScale: -1 }
@@ -173,8 +179,8 @@ PanelWindow {
                     width: 400
                     height: cardLayout.implicitHeight + 24
                     color: toastWindow.bgColor
-                    topLeftRadius: 0
-                    topRightRadius: 0
+                    topLeftRadius: 18
+                    topRightRadius: 18
                     bottomLeftRadius: 18
                     bottomRightRadius: 18
                     border.width: 0
@@ -191,6 +197,7 @@ PanelWindow {
 
                     // Cover the top border line so the card seamlessly merges into the top bar
                     Rectangle {
+                        visible: false // floating card now; this read as the old bar background
                         anchors {
                             left: parent.left
                             right: parent.right

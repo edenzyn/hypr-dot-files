@@ -1291,6 +1291,7 @@ Scope {
     // ─── Notification Toasts (Heads-Up Banners) ───────────────
     NotificationToasts {
         id: toastManager
+        barWindowRef: barWindow
         bgColor: root.bgColor
         bgColor2: root.bgColor2
         fgColor: root.fgColor

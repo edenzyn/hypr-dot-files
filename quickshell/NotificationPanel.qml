@@ -163,6 +163,7 @@ PanelWindow {
             let item = {
                 id: notif.id,
                 ref: notif,
+                desktopEntry: notif.desktopEntry || "",
                 appName: notif.appName && notif.appName.trim() !== "" ? notif.appName : "Notification",
                 appIcon: resolved,
                 summary: notif.summary || "",
@@ -179,6 +180,18 @@ PanelWindow {
                 notificationPanelWindow.newNotification(item)
             }
         }
+    }
+
+    // "Show": let the app open the right view (its default action, e.g. the
+    // chat), then focus its window on whatever screen/workspace it's on
+    function showApp(data) {
+        if (!data) return
+        let acts = data.actions || []
+        for (let i = 0; i < acts.length; i++) {
+            if (acts[i].identifier === "default") { acts[i].invoke(); break }
+        }
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/focus_app.sh",
+            data.desktopEntry || "", data.appName || ""])
     }
 
     onIsOpenChanged: {
@@ -679,7 +692,31 @@ PanelWindow {
                                     RowLayout {
                                         Layout.fillWidth: true
                                         spacing: 6
-                                        visible: (!groupCard.isGroup && groupData.items.length > 0 && (groupData.items[0].actions || []).some(a => a.text && a.text.trim() !== ""))
+                                        visible: !groupCard.isGroup && groupData.items.length > 0
+
+                                        // Show: jump to the app (any screen), open the right chat/view
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 26
+                                            radius: 13
+                                            color: sShowArea.containsMouse ? Qt.lighter(notificationPanelWindow.bgColor3, 1.4) : notificationPanelWindow.bgColor3
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "Show"
+                                                font { family: "Inter"; pixelSize: 11; weight: Font.DemiBold }
+                                                color: notificationPanelWindow.fgColor
+                                            }
+                                            MouseArea {
+                                                id: sShowArea
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    notificationPanelWindow.showApp(groupData.items[0])
+                                                    notificationPanelWindow.closeRequested()
+                                                }
+                                            }
+                                        }
 
                                         Repeater {
                                             model: (!groupCard.isGroup && groupData.items.length > 0) ? (groupData.items[0].actions || []).filter(a => a.text && a.text.trim() !== "") : [] // skip unlabeled actions
@@ -982,7 +1019,31 @@ PanelWindow {
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    visible: (nestedItem.actions || []).some(a => a.text && a.text.trim() !== "")
+                                                    visible: true // always has Show
+
+                                                    // Show: jump to the app (any screen), open the right chat/view
+                                                    Rectangle {
+                                                        Layout.fillWidth: true
+                                                        Layout.preferredHeight: 26
+                                                        radius: 13
+                                                        color: nShowArea.containsMouse ? Qt.lighter(notificationPanelWindow.bgColor3, 1.4) : notificationPanelWindow.bgColor3
+                                                        Text {
+                                                            anchors.centerIn: parent
+                                                            text: "Show"
+                                                            font { family: "Inter"; pixelSize: 11; weight: Font.DemiBold }
+                                                            color: notificationPanelWindow.fgColor
+                                                        }
+                                                        MouseArea {
+                                                            id: nShowArea
+                                                            anchors.fill: parent
+                                                            hoverEnabled: true
+                                                            cursorShape: Qt.PointingHandCursor
+                                                            onClicked: {
+                                                                notificationPanelWindow.showApp(nestedItem)
+                                                                notificationPanelWindow.closeRequested()
+                                                            }
+                                                        }
+                                                    }
 
                                                     Repeater {
                                                         model: (nestedItem.actions || []).filter(a => a.text && a.text.trim() !== "") // skip unlabeled actions

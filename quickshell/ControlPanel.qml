@@ -1034,6 +1034,12 @@ PanelWindow {
         }
     }
 
+    // Accent color for the whole shell; Bar.qml watches this file
+    function setAccent(hex) {
+        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" > \"$1\"", "sh",
+            Quickshell.env("HOME") + "/.local/state/quickshell/accent", hex.toUpperCase()])
+    }
+
     function writeDisplay(primary, mode) {
         // Switching into a single-screen mode from anything but Extend would turn
         // one screen off and the other on in the same step. For that moment no
@@ -3594,6 +3600,89 @@ PanelWindow {
                         onPressed: (mouse) => setFrom(mouse.x)
                         onPositionChanged: (mouse) => { if (pressed) setFrom(mouse.x) }
                         onWheel: (wheel) => controlPanelWindow.setNightLightTemp(controlPanelWindow.nightLightTemp + (wheel.angleDelta.y > 0 ? -100 : 100))
+                    }
+                }
+
+                // ─── Accent color (whole shell) ───
+                Text {
+                    text: "Accent color"
+                    font { family: "Inter"; pixelSize: 11; weight: Font.Bold }
+                    color: controlPanelWindow.fgColor
+                    opacity: 0.7
+                    Layout.leftMargin: 4
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    Repeater {
+                        // Catppuccin Mocha accents
+                        model: ["#89B4FA", "#B4BEFE", "#CBA6F7", "#F5C2E7", "#F38BA8", "#FAB387", "#F9E2AF", "#A6E3A1", "#94E2D5"]
+
+                        Rectangle {
+                            required property string modelData
+                            readonly property bool selected: Qt.colorEqual(controlPanelWindow.accentColor, modelData)
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 28
+                            radius: 14
+                            color: modelData
+                            border.width: selected ? 2 : 0
+                            border.color: "#FFFFFF"
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: controlPanelWindow.setAccent(modelData)
+                            }
+                        }
+                    }
+                }
+
+                // Hex field: type or paste any #RRGGBB, Enter to apply
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 40
+                    radius: 20
+                    color: controlPanelWindow.bgColor2
+                    border.width: 1
+                    border.color: hexInput.activeFocus ? controlPanelWindow.accentColor : "transparent"
+
+                    RowLayout {
+                        anchors { fill: parent; leftMargin: 8; rightMargin: 14 }
+                        spacing: 10
+
+                        Rectangle {
+                            Layout.preferredWidth: 26
+                            Layout.preferredHeight: 26
+                            radius: 13
+                            color: controlPanelWindow.accentColor
+                        }
+
+                        TextInput {
+                            id: hexInput
+                            Layout.fillWidth: true
+                            text: controlPanelWindow.accentColor.toString().toUpperCase()
+                            font { family: "JetBrainsMono Nerd Font"; pixelSize: 13; weight: Font.Bold }
+                            color: "#FFFFFF"
+                            selectionColor: controlPanelWindow.accentColor
+                            maximumLength: 7
+                            selectByMouse: true
+                            verticalAlignment: TextInput.AlignVCenter
+                            validator: RegularExpressionValidator { regularExpression: /#?[0-9a-fA-F]{0,6}/ }
+                            onAccepted: {
+                                let hex = text.startsWith("#") ? text : "#" + text
+                                if (/^#[0-9a-fA-F]{6}$/.test(hex)) controlPanelWindow.setAccent(hex)
+                                focus = false
+                            }
+                        }
+
+                        Text {
+                            text: "Enter to apply"
+                            font { family: "Inter"; pixelSize: 10 }
+                            color: controlPanelWindow.fgColor
+                            opacity: 0.6
+                        }
                     }
                 }
 

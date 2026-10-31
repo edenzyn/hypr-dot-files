@@ -18,6 +18,23 @@ Scope {
 
     readonly property var barPanelWindow: barWindow
 
+    // ─── Tray click: jump to the app's window, open it if it has none ──
+    property var trayFocusItem: null
+    Process {
+        id: trayFocusProc
+        onExited: (exitCode) => {
+            // 1 = no window found: let the app open itself (lands on the current screen)
+            if (exitCode !== 0 && root.trayFocusItem) root.trayFocusItem.activate()
+            root.trayFocusItem = null
+        }
+    }
+    function focusTrayApp(item) {
+        trayFocusItem = item
+        trayFocusProc.command = [Quickshell.env("HOME") + "/.config/hypr/focus_app.sh",
+            item.id || "", item.title || "", item.tooltipTitle || ""]
+        trayFocusProc.running = true
+    }
+
     // ─── Primary display (shared with hyprland.lua) ──────────
     // ~/.local/state/hypr/display holds "primary=<output>" and "mode=<mode>"
     property string primaryOutput: "HDMI-A-1"
@@ -84,8 +101,19 @@ Scope {
     property color bgColor2: "#1E1E1E"
     property color pillColor: "#0B0B0C" // bar pills, near-black like a Dynamic Island
     property color fgColor: "#CDD6F4"
+    // Accent color, chosen in Control Panel → Settings → Accent color
+    // (saved in ~/.local/state/quickshell/accent, shared by every panel)
     property color accentColor: "#89B4FA"
-    property color accentColorGlow: "#B4BEFE"
+    property color accentColorGlow: Qt.lighter(accentColor, 1.12)
+    FileView {
+        path: Quickshell.env("HOME") + "/.local/state/quickshell/accent"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            let hex = text().trim()
+            if (/^#[0-9a-fA-F]{6}$/.test(hex)) root.accentColor = hex
+        }
+    }
     property string mainFont: "Rowdies"
     property string iconFont: "JetBrainsMono NF"
     // ─── Media Player Logic ──────────────────────────────────
@@ -906,7 +934,7 @@ Scope {
                                             trayMenuPopup.openMenu(modelData, globalPos.x + trayDelegate.width / 2)
                                         }
                                     } else if (mouse.button === Qt.MiddleButton) {
-                                        modelData.secondaryActivate(0, 0)
+                                        modelData.secondaryActivate()
                                     } else {
                                         if (modelData.itemIsMenu) {
                                             if (root.showTrayMenu && trayMenuPopup.targetItem === modelData) {
@@ -921,13 +949,13 @@ Scope {
                                                 trayMenuPopup.openMenu(modelData, globalPos.x + trayDelegate.width / 2)
                                             }
                                         } else {
-                                            modelData.activate(0, 0)
+                                            root.focusTrayApp(modelData)
                                         }
                                     }
                                 }
 
                                 onWheel: (wheel) => {
-                                    modelData.scroll(wheel.angleDelta.y > 0 ? 1 : -1)
+                                    modelData.scroll(wheel.angleDelta.y > 0 ? 1 : -1, false)
                                 }
                             }
                         }
@@ -941,6 +969,7 @@ Scope {
     // ─── Full Media Player Popup ──────────────────────────────
     FullMediaPlayer {
         id: fullMediaPlayer
+        accentColor: root.accentColor
         barWindowRef: barWindow
         isOpen: root.showFullPlayer
         player: root.activePlayer

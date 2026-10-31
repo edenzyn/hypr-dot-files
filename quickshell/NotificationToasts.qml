@@ -41,6 +41,7 @@ PanelWindow {
             id: notif.id,
             appName: notif.appName || "Notification",
             appIcon: notif.appIcon || "",
+            desktopEntry: notif.desktopEntry || "",
             summary: notif.summary || "",
             body: notif.body || "",
             image: notif.image || "",
@@ -66,6 +67,18 @@ PanelWindow {
     }
 
     visible: activeToasts.length > 0
+
+    // "Show": let the app open the right view (its default action, e.g. the
+    // chat), then focus its window on whatever screen/workspace it's on
+    function showApp(data) {
+        if (!data) return
+        let acts = data.actions || []
+        for (let i = 0; i < acts.length; i++) {
+            if (acts[i].identifier === "default") { acts[i].invoke(); break }
+        }
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/focus_app.sh",
+            data.desktopEntry || "", data.appName || ""])
+    }
 
     Column {
         id: toastColumn
@@ -215,8 +228,9 @@ PanelWindow {
                         onTriggered: toastDelegate.dismiss()
                     }
 
-                    // Progress bar indicator along the bottom
+                    // Progress bar indicator along the bottom: off (not wanted)
                     Rectangle {
+                        visible: false
                         anchors {
                             left: parent.left
                             right: parent.right
@@ -382,7 +396,33 @@ PanelWindow {
                             // Skip unlabeled actions (e.g. ZapZap's "default" click action
                             // showed up as an empty button)
                             readonly property var labeledActions: (modelData.actions || []).filter(a => a.text && a.text.trim() !== "")
-                            visible: labeledActions.length > 0
+                            visible: true // always has Show
+
+                            // Show: jump to the app (any screen), open the right chat/view
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 26
+                                radius: 13
+                                color: showArea.containsMouse ? Qt.lighter(toastWindow.bgColor2, 1.5) : toastWindow.bgColor2
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Show"
+                                    font { family: "Inter"; pixelSize: 11; weight: Font.DemiBold }
+                                    color: showArea.containsMouse ? "#FFFFFF" : toastWindow.fgColor
+                                }
+
+                                MouseArea {
+                                    id: showArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        toastWindow.showApp(modelData)
+                                        toastDelegate.dismiss()
+                                    }
+                                }
+                            }
 
                             Repeater {
                                 model: actionRow.labeledActions

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Lines for the terminal welcome card (fastfetch "command" modules).
 # Everything is read from a cache, so this is instant; slow data (weather,
-# updates, Reddit) is refreshed in the background by `greet.sh refresh`.
-#   greet.sh hello|today|updates|reddit|quote|refresh
+# updates) is refreshed in the background by `greet.sh refresh`.
+#   greet.sh hello|today|updates|quote|refresh
 CACHE="$HOME/.cache/terminal-greeting"
 mkdir -p "$CACHE"
 
@@ -32,10 +32,6 @@ case "$1" in
         elif [ "$n" -gt 0 ]; then echo "$n pending  (sudo pacman -Syu)"
         else echo "system up to date"; fi
         ;;
-    reddit)
-        # random post from today's top: "r/sub  title"
-        [ -s "$CACHE/reddit" ] && shuf -n 1 "$CACHE/reddit" | cut -c1-70 || echo "loading…"
-        ;;
     quote)
         shuf -n 1 <<'EOF'
 Talk is cheap. Show me the code.  - Linus Torvalds
@@ -52,20 +48,5 @@ EOF
     refresh)
         stale weather 1800 && fetch weather sh -c "curl -s --max-time 4 'wttr.in/?format=%c%t+%C' | grep '°'"
         stale updates 10800 && fetch updates sh -c "checkupdates 2>/dev/null | wc -l"
-        # One combined feed request; after a failure (e.g. rate limit) wait 15 min
-        # before trying again, and keep showing the last good posts meanwhile
-        if stale reddit 7200 && stale reddit.try 900; then
-            touch "$CACHE/reddit.try"
-            fetch reddit sh -c 'curl -sf --max-time 6 -A "Mozilla/5.0 terminal-greeting/1.0" \
-                "https://www.reddit.com/r/unixporn+linux+programming/top/.rss?t=day&limit=15" \
-                | python3 -I -c "
-import sys, html, xml.etree.ElementTree as ET
-ns = {\"a\": \"http://www.w3.org/2005/Atom\"}
-root = ET.fromstring(sys.stdin.read())
-for e in root.findall(\"a:entry\", ns):
-    sub = e.find(\"a:category\", ns).get(\"term\")
-    print(\"r/\" + sub + \"  \" + html.unescape(e.find(\"a:title\", ns).text.strip()))
-"'
-        fi
         ;;
 esac

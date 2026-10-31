@@ -29,9 +29,9 @@ function open-bios --description "Reboot into the BIOS/UEFI setup"
 end
 
 # ── Welcome screen ───────────────────────────────────────────────────
-# One fastfetch card (~/.config/fastfetch): greeting, date/weather, updates,
-# a trending Reddit post, system info and a quote. greet.sh refreshes the
-# slow parts (weather, updates, Reddit) in the background and caches them.
+# One fastfetch card (~/.config/fastfetch): image logo, greeting, date and
+# weather, system + hardware trees, pending updates and a quote. greet.sh
+# refreshes the slow parts (weather, updates) in the background.
 function fish_greeting
     ~/.config/fastfetch/greet.sh refresh
 
@@ -40,5 +40,14 @@ function fish_greeting
     if test -s ~/.local/state/quickshell/accent
         set accent (string trim (command cat ~/.local/state/quickshell/accent))
     end
-    fastfetch --color-keys $accent --logo-color-1 $accent --logo-color-2 "#B4BEFE"
+
+    # Image logo needs the kitty graphics protocol (ghostty, kitty);
+    # other terminals (e.g. VS Code) get the small CachyOS text logo
+    set -l logo
+    # (also when ~/.config/fastfetch/logo.png is missing, e.g. a fresh install)
+    if not test -f ~/.config/fastfetch/logo.png; or begin; not contains -- "$TERM_PROGRAM" ghostty kitty; and test "$TERM" != xterm-kitty; end
+        set logo --logo-type builtin --logo CachyOS_small --logo-color-1 $accent --logo-color-2 "#B4BEFE"
+    end
+
+    fastfetch --color-keys $accent $logo
 end

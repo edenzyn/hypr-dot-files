@@ -3608,21 +3608,14 @@ PanelWindow {
                 }
 
                 // ─── Accent color (whole shell) ───
-                Text {
-                    text: "Accent color"
-                    font { family: "Inter"; pixelSize: 11; weight: Font.Bold }
-                    color: controlPanelWindow.fgColor
-                    opacity: 0.7
-                    Layout.leftMargin: 4
-                }
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 6
 
                     Repeater {
-                        // Sky, Lilac, Sakura, Coral, Apricot, Butter, Matcha, Mint, Lagoon, Orchid
-                        model: ["#89B4FA", "#C4B5FD", "#F5A8D4", "#FF9E9E", "#FFC48C", "#F8E3A1", "#B8E6A1", "#8EE3D0", "#89DCEB", "#E7C6FF"]
+                        // Night blue, Glacier, Jade, Moss, Amber, Ember, Rose, Wine, Amethyst, Mist
+                        model: ["#7AA2F7", "#7DCFFF", "#73DACA", "#9ECE6A", "#E0AF68", "#FF9E64", "#F7768E", "#D27FA3", "#9D7CD8", "#A9B1D6"]
 
                         Rectangle {
                             required property string modelData
@@ -3639,51 +3632,6 @@ PanelWindow {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: controlPanelWindow.setAccent(modelData)
                             }
-                        }
-                    }
-                }
-
-                // Color picker: any hue, kept at a soft readable lightness
-                Rectangle {
-                    id: hueStrip
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 22
-                    radius: 11
-                    property real pickedHue: -1 // live preview while dragging
-
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.000; color: Qt.hsla(0.000, 0.85, 0.72, 1) }
-                        GradientStop { position: 0.167; color: Qt.hsla(0.167, 0.85, 0.72, 1) }
-                        GradientStop { position: 0.333; color: Qt.hsla(0.333, 0.85, 0.72, 1) }
-                        GradientStop { position: 0.500; color: Qt.hsla(0.500, 0.85, 0.72, 1) }
-                        GradientStop { position: 0.667; color: Qt.hsla(0.667, 0.85, 0.72, 1) }
-                        GradientStop { position: 0.833; color: Qt.hsla(0.833, 0.85, 0.72, 1) }
-                        GradientStop { position: 1.000; color: Qt.hsla(0.999, 0.85, 0.72, 1) }
-                    }
-
-                    // Knob at the current accent's hue
-                    Rectangle {
-                        readonly property real hue: hueStrip.pickedHue >= 0 ? hueStrip.pickedHue : Math.max(0, controlPanelWindow.accentColor.hslHue)
-                        x: Math.round(hue * (hueStrip.width - width))
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 16
-                        height: 16
-                        radius: 8
-                        color: Qt.hsla(hue, 0.85, 0.72, 1)
-                        border.width: 2
-                        border.color: "#FFFFFF"
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        function hueAt(x) { return Math.max(0, Math.min(0.999, x / width)) }
-                        onPressed: (mouse) => hueStrip.pickedHue = hueAt(mouse.x)
-                        onPositionChanged: (mouse) => { if (pressed) hueStrip.pickedHue = hueAt(mouse.x) }
-                        onReleased: {
-                            controlPanelWindow.setAccent(Qt.hsla(hueStrip.pickedHue, 0.85, 0.72, 1).toString())
-                            hueStrip.pickedHue = -1
                         }
                     }
                 }
@@ -3736,13 +3684,6 @@ PanelWindow {
                 }
 
                 // ─── Display: projection mode + primary display ───
-                Text {
-                    text: "Display"
-                    font { family: "Inter"; pixelSize: 11; weight: Font.Bold }
-                    color: controlPanelWindow.fgColor
-                    opacity: 0.7
-                    Layout.leftMargin: 4
-                }
 
                 Rectangle {
                     id: displaySegBar

@@ -195,7 +195,8 @@ Scope {
 
             Rectangle {
                 id: clockPill
-                implicitWidth: Math.round(82 * root.barScale)
+                // Fits "hh:mm AM  ·  Oct 31"
+                implicitWidth: clockText.implicitWidth + Math.round(26 * root.barScale)
                 implicitHeight: Math.round(26 * root.barScale)
                 anchors.verticalCenter: parent.verticalCenter
                 color: root.showCalendar ? Qt.lighter(root.pillColor, 1.4) : (clockMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
@@ -204,16 +205,17 @@ Scope {
                 Behavior on color { ColorAnimation { duration: 150 } }
 
                 Text {
+                    id: clockText
                     anchors.centerIn: parent
                     color: root.showCalendar ? root.accentColorGlow : root.accentColor
                     font { family: root.mainFont; pixelSize: Math.round(13 * root.barScale) }
-                    text: Qt.formatDateTime(new Date(), "hh:mm A")
+                    text: Qt.formatDateTime(new Date(), "hh:mm A  ·  MMM d")
 
                     Timer {
                         interval: 1000
                         running: true
                         repeat: true
-                        onTriggered: parent.text = Qt.formatDateTime(new Date(), "hh:mm A")
+                        onTriggered: parent.text = Qt.formatDateTime(new Date(), "hh:mm A  ·  MMM d")
                     }
                 }
 

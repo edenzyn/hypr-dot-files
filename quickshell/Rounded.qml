@@ -17,7 +17,8 @@ Scope {
             right: true
         }
         implicitHeight: border.borderWidth
-        color: border.borderColor
+        // Transparent now that the bar has no background (it showed as a dark line under the pills)
+        color: "transparent"
     }
 
    

@@ -43,6 +43,10 @@ local function applyDisplays()
     -- Never turn the laptop screen off unless the monitor is really plugged in
     if mode == "monitor" and monitorConnected(MONITOR) ~= true then mode = "extend" end
 
+    -- Single-screen modes: the only screen left is the primary (bar + workspace 1)
+    if mode == "laptop" then primary, other = LAPTOP, MONITOR end
+    if mode == "monitor" then primary, other = MONITOR, LAPTOP end
+
     local function show(output, position)
         hl.monitor({ output = output, mode = MODES[output], position = position, scale = 1 })
     end

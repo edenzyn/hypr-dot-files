@@ -28,7 +28,11 @@ Scope {
         onFileChanged: reload()
         onLoaded: {
             let m = text().match(/primary=(\S+)/)
-            if (m) root.primaryOutput = m[1]
+            let mode = text().match(/mode=(\S+)/)
+            // Single-screen modes: the bar goes to the only screen that stays on
+            if (mode && mode[1] === "laptop") root.primaryOutput = "eDP-1"
+            else if (mode && mode[1] === "monitor") root.primaryOutput = "HDMI-A-1"
+            else if (m) root.primaryOutput = m[1]
         }
     }
 

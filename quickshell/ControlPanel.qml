@@ -801,7 +801,158 @@ PanelWindow {
 
     // Save the display layout and reload Hyprland; hyprland.lua reads the same
     // file, so the choice also survives logins. The bar follows "primary".
-    function setDisplay(primary, mode) {
+    // Every change shows a 5 s "Keep these display settings?" dialog and reverts
+    // on its own unless Keep is pressed (so a bad layout can't strand you).
+    property string prevDisplayPrimary: ""
+    property string prevDisplayMode: ""
+    property bool displayConfirmActive: false
+    property int displayConfirmSeconds: 5
+
+    function changeDisplay(primary, mode) {
+        if (primary === displayPrimary && mode === displayMode) return
+        prevDisplayPrimary = displayPrimary
+        prevDisplayMode = displayMode
+        closeRequested() // the layout is about to change, and the dialog needs clicks
+        writeDisplay(primary, mode)
+        displayConfirmSeconds = 5
+        displayConfirmActive = true
+        displayConfirmTimer.restart()
+    }
+
+    // Keep displayPrimary/displayMode in sync with the saved file at all times
+    // (revert needs the real previous values, not whatever Settings last showed)
+    FileView {
+        path: Quickshell.env("HOME") + "/.local/state/hypr/display"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            let m = text().match(/mode=(\S+)/)
+            if (m) controlPanelWindow.displayMode = m[1]
+            let p = text().match(/primary=(\S+)/)
+            if (p) controlPanelWindow.displayPrimary = p[1]
+        }
+    }
+
+    // qs ipc call display set <eDP-1|HDMI-A-1> <extend|mirror|laptop|monitor>
+    IpcHandler {
+        target: "display"
+        function set(primary: string, mode: string) { controlPanelWindow.changeDisplay(primary, mode) }
+        function keep() { controlPanelWindow.keepDisplay() }
+        function revert() { controlPanelWindow.revertDisplay() }
+    }
+
+    function keepDisplay() {
+        displayConfirmTimer.stop()
+        displayConfirmActive = false
+    }
+
+    function revertDisplay() {
+        displayConfirmTimer.stop()
+        displayConfirmActive = false
+        writeDisplay(prevDisplayPrimary, prevDisplayMode)
+    }
+
+    Timer {
+        id: displayConfirmTimer
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            controlPanelWindow.displayConfirmSeconds--
+            if (controlPanelWindow.displayConfirmSeconds <= 0) controlPanelWindow.revertDisplay()
+        }
+    }
+
+    PanelWindow {
+        id: displayConfirmWindow
+        visible: controlPanelWindow.displayConfirmActive
+        screen: controlPanelWindow.barWindowRef ? controlPanelWindow.barWindowRef.screen : null
+        anchors { top: true; bottom: true; left: true; right: true }
+        color: Qt.rgba(0, 0, 0, 0.35)
+        exclusiveZone: -1
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "quickshell-display-confirm"
+        WlrLayershell.keyboardFocus: controlPanelWindow.displayConfirmActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 380
+            height: 170
+            radius: 24
+            color: controlPanelWindow.bgColor
+            border.width: 1
+            border.color: "#2C2C30"
+
+            focus: true
+            Keys.onReturnPressed: controlPanelWindow.keepDisplay()
+            Keys.onEscapePressed: controlPanelWindow.revertDisplay()
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 22
+                spacing: 8
+
+                Text {
+                    text: "Keep these display settings?"
+                    font { family: "Inter"; pixelSize: 15; weight: Font.Bold }
+                    color: "#FFFFFF"
+                }
+                Text {
+                    text: "Reverting in " + controlPanelWindow.displayConfirmSeconds + " seconds…"
+                    font { family: "Inter"; pixelSize: 12 }
+                    color: controlPanelWindow.fgColor
+                }
+
+                Item { Layout.fillHeight: true }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        radius: 20
+                        color: revertArea.containsMouse ? Qt.lighter(controlPanelWindow.bgColor2, 1.35) : controlPanelWindow.bgColor2
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Revert"
+                            font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                            color: controlPanelWindow.fgColor
+                        }
+                        MouseArea {
+                            id: revertArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: controlPanelWindow.revertDisplay()
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        radius: 20
+                        color: keepArea.containsMouse ? Qt.lighter(controlPanelWindow.accentColor, 1.1) : controlPanelWindow.accentColor
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Keep"
+                            font { family: "Inter"; pixelSize: 12; weight: Font.Bold }
+                            color: controlPanelWindow.bgColor
+                        }
+                        MouseArea {
+                            id: keepArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: controlPanelWindow.keepDisplay()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function writeDisplay(primary, mode) {
         controlPanelWindow.displayPrimary = primary
         controlPanelWindow.displayMode = mode
         Quickshell.execDetached(["sh", "-c",
@@ -3329,7 +3480,7 @@ PanelWindow {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     enabled: controlPanelWindow.externalConnected
-                                    onClicked: controlPanelWindow.setDisplay(controlPanelWindow.displayPrimary, modelData.mode)
+                                    onClicked: controlPanelWindow.changeDisplay(controlPanelWindow.displayPrimary, modelData.mode)
                                 }
                             }
                         }
@@ -3394,7 +3545,7 @@ PanelWindow {
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: controlPanelWindow.setDisplay(modelData.output, controlPanelWindow.displayMode)
+                                    onClicked: controlPanelWindow.changeDisplay(modelData.output, controlPanelWindow.displayMode)
                                 }
                             }
                         }

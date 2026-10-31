@@ -1,84 +1,44 @@
+# ~/.config/fish/config.fish
+
+# ── Base ─────────────────────────────────────────────────────────────
+# CachyOS defaults (abbreviations, man pages through bat, ...)
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
-# overwrite greeting
-# potentially disabling fastfetch
-starship init fish | source
-zoxide init fish | source
+# ── Prompt & tools ───────────────────────────────────────────────────
+set -gx STARSHIP_CONFIG $HOME/.config/starship/starship.toml
+starship init fish | source        # prompt (~/.config/starship/starship.toml)
+zoxide init fish | source          # `z <dir>` smart cd
+fnm env --use-on-cd | source       # Node version per project
 
+# ── Aliases ──────────────────────────────────────────────────────────
 alias ls="eza --icons"
 alias ll="eza -lah --icons"
 alias la="eza -la --icons"
 alias cat="bat"
 alias cls="clear"
 
-fnm env --use-on-cd | source
+# ── Environment ──────────────────────────────────────────────────────
+fish_add_path -g $HOME/.local/bin
+set -gx ANDROID_HOME $HOME/Android/Sdk
+set -gx ANDROID_SDK_ROOT $HOME/Android/Sdk
+fish_add_path -g $ANDROID_HOME/cmdline-tools/latest/bin $ANDROID_HOME/platform-tools
 
-# ─── Terminal welcome screen ─────────────────────────────────
-# fastfetch + greeting + date / weather / pending updates + a random quote.
-# Weather and updates are fetched in the background and cached, so opening a
-# terminal never waits on the network.
-function __greet_refresh --argument-names file max_age cmd
-    if not test -s $file; or test (math (date +%s) - (stat -c %Y $file)) -gt $max_age
-        fish -c "$cmd > $file.tmp 2>/dev/null; and test -s $file.tmp; and mv $file.tmp $file; or rm -f $file.tmp" &>/dev/null &
-        disown 2>/dev/null
-    end
-end
-
-function fish_greeting
-    fastfetch
-
-    set -l cache ~/.cache/terminal-greeting
-    mkdir -p $cache
-    __greet_refresh $cache/weather 1800 "curl -s --max-time 4 'wttr.in/?format=%c%t+%C' | grep '°'"
-    __greet_refresh $cache/updates 10800 "checkupdates 2>/dev/null | wc -l"
-
-    set -l hour (date +%H)
-    set -l part evening
-    if test $hour -lt 12
-        set part morning
-    else if test $hour -lt 17
-        set part afternoon
-    end
-
-    set -l accent 89B4FA
-    test -s ~/.local/state/quickshell/accent; and set accent (string replace '#' '' (command cat ~/.local/state/quickshell/accent))
-
-    set -l info (date "+%a, %b %d")
-    test -s $cache/weather; and set info "$info   ·   "(string trim (command cat $cache/weather))
-    if test -s $cache/updates
-        set -l n (string trim (command cat $cache/updates))
-        if test "$n" -gt 0 2>/dev/null
-            set info "$info   ·   󰚰 $n updates"
-        else
-            set info "$info   ·   󰄬 up to date"
-        end
-    end
-
-    set -l quotes \
-        "Talk is cheap. Show me the code. - Linus Torvalds" \
-        "First, solve the problem. Then, write the code. - John Johnson" \
-        "Simplicity is the soul of efficiency. - Austin Freeman" \
-        "Make it work, make it right, make it fast. - Kent Beck" \
-        "Code is like humor. When you have to explain it, it's bad. - Cory House" \
-        "Programs must be written for people to read. - Harold Abelson" \
-        "The best error message is the one that never shows up. - Thomas Fuchs" \
-        "Deleted code is debugged code. - Jeff Sickel" \
-        "It works on my machine. - Every developer, ever" \
-        "Ship it. - Everyone at 2 AM"
-
-    echo
-    set_color --bold $accent; echo "   Good $part, $USER"
-    set_color normal; set_color A9B1D6; echo "   $info"
-    set_color 6C7086 --italics; echo "   "$quotes[(random 1 (count $quotes))]
-    set_color normal
-    echo
-end
-export PATH="$HOME/.local/bin:$PATH"
-
-function open-bios
+# ── Functions ────────────────────────────────────────────────────────
+function open-bios --description "Reboot into the BIOS/UEFI setup"
     sudo systemctl reboot --firmware-setup
 end
 
-export ANDROID_HOME="$HOME/Android/Sdk"
-export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
-export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+# ── Welcome screen ───────────────────────────────────────────────────
+# One fastfetch card (~/.config/fastfetch): greeting, date/weather, updates,
+# a trending Reddit post, system info and a quote. greet.sh refreshes the
+# slow parts (weather, updates, Reddit) in the background and caches them.
+function fish_greeting
+    ~/.config/fastfetch/greet.sh refresh
+
+    # Draw the card in the shell's accent color (Control Panel → Settings)
+    set -l accent "#89B4FA"
+    if test -s ~/.local/state/quickshell/accent
+        set accent (string trim (command cat ~/.local/state/quickshell/accent))
+    end
+    fastfetch --color-keys $accent --logo-color-1 $accent --logo-color-2 "#B4BEFE"
+end

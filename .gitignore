@@ -9,7 +9,7 @@
 # Terminal: ghostty + fish + starship prompt + fastfetch welcome screen
 !/ghostty/
 !/fastfetch/
-!/starship.toml
+!/starship/
 !/fish/
 /fish/*
 !/fish/config.fish

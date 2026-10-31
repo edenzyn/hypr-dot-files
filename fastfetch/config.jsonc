@@ -1,60 +1,65 @@
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
 
-  // Terminal welcome screen, colors match the bar/panels (Catppuccin Mocha)
+  // ── Terminal welcome card ────────────────────────────────────────────
+  // One column next to the logo: greeting, today/updates/Reddit, system, quote.
+  // Dynamic lines come from greet.sh (reads a cache, so it's instant).
+  // fish passes the shell's accent color with --color-keys / --logo-color-*.
+
   "logo": {
     "type": "builtin",
     "source": "CachyOS_small",
-    "color": {
-      "1": "#89B4FA",
-      "2": "#B4BEFE"
-    },
-    "padding": {
-      "top": 1,
-      "left": 2,
-      "right": 4
-    }
+    "color": { "1": "#89B4FA", "2": "#B4BEFE" },
+    "padding": { "top": 2, "left": 2, "right": 4 }
   },
 
   "display": {
     "separator": "  ",
-    "color": {
-      "keys": "#89B4FA",
-      "title": "#B4BEFE"
-    },
-    "key": {
-      "width": 13
-    }
+    "color": { "keys": "#89B4FA", "output": "#CDD6F4" },
+    "key": { "width": 12 }
   },
 
   "modules": [
     "break",
+
+    // Greeting
     {
-      "type": "title",
-      "format": "{user-name}@{host-name}"
+      "type": "command",
+      "key": " ",
+      "keyWidth": 1,
+      "text": "~/.config/fastfetch/greet.sh hello",
+      "outputColor": "1"
     },
-    {
-      "type": "separator",
-      "string": "─"
-    },
-    { "type": "os",       "key": "󰣇  OS",       "format": "{name}" },
-    { "type": "kernel",   "key": "󰒋  Kernel" },
-    { "type": "wm",       "key": "  WM" },
-    { "type": "shell",    "key": "󰈺  Shell" },
-    { "type": "terminal", "key": "󰆍  Terminal" },
-    { "type": "packages", "key": "󰏖  Packages" },
+    { "type": "separator", "string": "─", "outputColor": "38;2;69;71;90" },
+
+    // Today
+    { "type": "command", "key": "󰃭  Today",   "text": "~/.config/fastfetch/greet.sh today" },
+    { "type": "command", "key": "󰚰  Updates", "text": "~/.config/fastfetch/greet.sh updates" },
+    { "type": "command", "key": "  Reddit",  "text": "~/.config/fastfetch/greet.sh reddit" },
     "break",
-    { "type": "cpu",      "key": "󰍛  CPU" },
-    { "type": "gpu",      "key": "󰢮  GPU", "hideType": "integrated" },
-    { "type": "memory",   "key": "󰍹  Memory" },
-    { "type": "disk",     "key": "󰋊  Disk", "folders": "/" },
-    { "type": "battery",  "key": "󰁹  Battery" },
+
+    // System
+    { "type": "os",       "key": "󰣇  OS",       "format": "{name}" },
+    { "type": "kernel",   "key": "󰒋  Kernel",   "format": "{release}" },
+    { "type": "wm",       "key": "  WM",       "format": "{pretty-name}" },
+    { "type": "terminal", "key": "󰆍  Shell",    "format": "{pretty-name}  ·  fish" },
     { "type": "uptime",   "key": "󰅐  Uptime" },
     "break",
+    { "type": "cpu",      "key": "󰍛  CPU",      "format": "{name}" },
+    { "type": "gpu",      "key": "󰢮  GPU",      "format": "{name}", "hideType": "integrated" },
+    { "type": "memory",   "key": "󰍹  Memory" },
+    { "type": "disk",     "key": "󰋊  Disk",     "folders": "/", "format": "{size-used} / {size-total} ({size-percentage})" },
+    "break",
+
+    // Quote
     {
-      "type": "colors",
-      "symbol": "circle",
-      "paddingLeft": 2
-    }
+      "type": "command",
+      "key": " ",
+      "keyWidth": 1,
+      "text": "~/.config/fastfetch/greet.sh quote",
+      "outputColor": "38;2;127;132;156;3"
+    },
+    "break",
+    { "type": "colors", "symbol": "circle", "paddingLeft": 1 }
   ]
 }

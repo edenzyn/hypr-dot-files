@@ -76,7 +76,7 @@ PanelWindow {
         for (let i = 0; i < acts.length; i++) {
             if (acts[i].identifier === "default") { acts[i].invoke(); break }
         }
-        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/focus_app.sh",
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/scripts/focus_app.sh",
             data.desktopEntry || "", data.appName || ""])
     }
 

@@ -23,7 +23,7 @@ Scope {
         interval: 30000
         running: true
         repeat: true
-        onTriggered: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/session_settings.sh", "save"])
+        onTriggered: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/scripts/session_settings.sh", "save"])
     }
 
     // ─── Tray click: jump to the app's window, open it if it has none ──
@@ -38,7 +38,7 @@ Scope {
     }
     function focusTrayApp(item) {
         trayFocusItem = item
-        trayFocusProc.command = [Quickshell.env("HOME") + "/.config/hypr/focus_app.sh",
+        trayFocusProc.command = [Quickshell.env("HOME") + "/.config/hypr/scripts/focus_app.sh",
             item.id || "", item.title || "", item.tooltipTitle || ""]
         trayFocusProc.running = true
     }

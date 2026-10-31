@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ~/.config/hypr/share_picker.sh
+# ~/.config/hypr/scripts/share_picker.sh
 # Custom screen share picker bridge between xdg-desktop-portal-hyprland and Quickshell
 
 export LC_ALL="${LC_ALL:-en_US.UTF-8}"

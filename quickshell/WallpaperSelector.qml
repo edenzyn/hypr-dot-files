@@ -98,7 +98,7 @@ PanelWindow {
     // Fetch wallpapers list
     Process {
         id: fetchProc
-        command: [Quickshell.env("HOME") + "/.config/hypr/get_wallpapers.py"]
+        command: [Quickshell.env("HOME") + "/.config/hypr/scripts/get_wallpapers.py"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -165,7 +165,7 @@ PanelWindow {
     Process {
         id: browseProc
         running: false
-        command: [Quickshell.env("HOME") + "/.config/hypr/manage_wallpaper_folders.py", "browse"]
+        command: [Quickshell.env("HOME") + "/.config/hypr/scripts/manage_wallpaper_folders.py", "browse"]
         stdout: StdioCollector {
             onStreamFinished: {
                 wallpaperWindow.isBrowsingFolder = false
@@ -205,7 +205,7 @@ PanelWindow {
         wallpaperWindow.currentWallpaperPath = path
         wallpaperWindow.statusMessage = "Wallpaper Applied!"
         statusClearTimer.restart()
-        applyProc.command = [Quickshell.env("HOME") + "/.config/hypr/set_wallpaper.sh", path]
+        applyProc.command = [Quickshell.env("HOME") + "/.config/hypr/scripts/set_wallpaper.sh", path]
         applyProc.running = false
         applyProc.running = true
     }
@@ -223,14 +223,14 @@ PanelWindow {
             return
         }
         addFolderError = ""
-        addFolderProc.command = [Quickshell.env("HOME") + "/.config/hypr/manage_wallpaper_folders.py", "add", path.trim()]
+        addFolderProc.command = [Quickshell.env("HOME") + "/.config/hypr/scripts/manage_wallpaper_folders.py", "add", path.trim()]
         addFolderProc.running = false
         addFolderProc.running = true
     }
 
     function removeFolder(path) {
         if (!path) return
-        removeFolderProc.command = [Quickshell.env("HOME") + "/.config/hypr/manage_wallpaper_folders.py", "remove", path]
+        removeFolderProc.command = [Quickshell.env("HOME") + "/.config/hypr/scripts/manage_wallpaper_folders.py", "remove", path]
         removeFolderProc.running = false
         removeFolderProc.running = true
     }

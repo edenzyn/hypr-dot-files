@@ -6,7 +6,7 @@ import Quickshell.Io
 
 // One shared wallpaper path, drawn on every monitor.
 // Images are drawn here. Videos/GIFs are played by mpvpaper (started by
-// ~/.config/hypr/set_wallpaper.sh); these windows fade out and unmap so the
+// ~/.config/hypr/scripts/set_wallpaper.sh); these windows fade out and unmap so the
 // video underneath shows, and they pause it while windows cover the screen.
 Scope {
     id: wallpaperRoot
@@ -100,7 +100,7 @@ Scope {
             if (["openwindow", "changefloatingmode", "movewindowv2"].includes(event.name)) Hyprland.refreshToplevels()
             // A newly plugged-in monitor needs its own video player
             if (event.name === "monitoraddedv2" && wallpaperRoot.isVideo) {
-                Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/set_wallpaper.sh", "--restore"])
+                Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/scripts/set_wallpaper.sh", "--restore"])
             }
         }
     }

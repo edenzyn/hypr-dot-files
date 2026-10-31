@@ -171,7 +171,7 @@ Scope {
         }
         exclusiveZone: 0
         implicitWidth: 440
-        implicitHeight: 80
+        implicitHeight: 88
         color: "transparent"
         visible: false
         WlrLayershell.layer: WlrLayer.Overlay
@@ -196,7 +196,7 @@ Scope {
                 NumberAnimation {
                     target: osdContainer
                     property: "y"
-                    to: 0
+                    to: 8 // gap under the bar
                     duration: 280
                     easing.type: Easing.OutCubic
                 }
@@ -224,6 +224,7 @@ Scope {
 
             // Left curved fillet joining the card smoothly into the top bar
             Shape {
+                visible: false // floating card, no bar fillet
                 width: 16
                 height: 16
                 transform: Scale { origin.y: 8; yScale: -1 }
@@ -253,6 +254,7 @@ Scope {
 
             // Right curved fillet joining the card smoothly into the top bar
             Shape {
+                visible: false // floating card, no bar fillet
                 width: 16
                 height: 16
                 transform: Scale { origin.y: 8; yScale: -1 }
@@ -286,8 +288,8 @@ Scope {
                 width: root.cardWidth
                 height: root.cardHeight
                 color: "#121213"
-                topLeftRadius: 0
-                topRightRadius: 0
+                topLeftRadius: bottomLeftRadius
+                topRightRadius: bottomRightRadius
                 bottomLeftRadius: 18
                 bottomRightRadius: 18
                 border.width: 0
@@ -310,6 +312,7 @@ Scope {
                         top: parent.top
                     }
                     height: 2
+                    visible: false // straight strip stuck out past the rounded top corners
                     color: "#121213"
                 }
 

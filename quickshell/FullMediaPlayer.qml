@@ -345,6 +345,7 @@ PanelWindow {
                     top: parent.top
                 }
                 height: 2
+                visible: false // straight strip stuck out past the rounded top corners
                 color: popupWindow.bgColor
             }
 

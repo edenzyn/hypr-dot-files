@@ -82,6 +82,7 @@ Scope {
     // ─── Theme ───────────────────────────────────────────────
     property color bgColor: "#121213"
     property color bgColor2: "#1E1E1E"
+    property color pillColor: "#0B0B0C" // bar pills, near-black like a Dynamic Island
     property color fgColor: "#CDD6F4"
     property color accentColor: "#89B4FA"
     property color accentColorGlow: "#B4BEFE"
@@ -126,7 +127,8 @@ Scope {
             right: true
         }
         implicitHeight: Math.round(40 * root.barScale)
-        color: root.bgColor
+        // No bar background: only the pills float over the wallpaper (Dynamic Island style)
+        color: "transparent"
 
         Item {
         anchors.fill: parent
@@ -148,7 +150,7 @@ Scope {
                 implicitWidth: Math.round(82 * root.barScale)
                 implicitHeight: Math.round(26 * root.barScale)
                 anchors.verticalCenter: parent.verticalCenter
-                color: root.showCalendar ? Qt.lighter(root.bgColor2, 1.4) : (clockMouseArea.containsMouse ? Qt.lighter(root.bgColor2, 1.3) : root.bgColor2)
+                color: root.showCalendar ? Qt.lighter(root.pillColor, 1.4) : (clockMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
                 radius: Math.round(30 * root.barScale)
 
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -191,7 +193,7 @@ Scope {
                 implicitWidth: (wsRow.implicitWidth ?? 0) + Math.round(24 * root.barScale)
                 implicitHeight: Math.round(26 * root.barScale)
                 anchors.verticalCenter: parent.verticalCenter
-                color: root.bgColor2
+                color: root.pillColor
                 radius: Math.round(30 * root.barScale)
 
                 Row {
@@ -243,7 +245,7 @@ Scope {
    //             implicitWidth: Math.round(28 * root.barScale)
    //             implicitHeight: Math.round(26 * root.barScale)
    //             anchors.verticalCenter: parent.verticalCenter
-   //             color: root.showAppLauncher ? Qt.lighter(root.bgColor2, 1.4) : (launcherMouseArea.containsMouse ? Qt.lighter(root.bgColor2, 1.3) : root.bgColor2)
+   //             color: root.showAppLauncher ? Qt.lighter(root.pillColor, 1.4) : (launcherMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
    //             radius: Math.round(30 * root.barScale)
 //
    //             Behavior on color { ColorAnimation { duration: 150 } }
@@ -281,7 +283,7 @@ Scope {
                 clip: true
                 width: showPill ? ((titleRow.implicitWidth ?? 0) + Math.round(32 * root.barScale)) : 0
                 height: Math.round(26 * root.barScale)
-                color: root.bgColor2
+                color: root.pillColor
                 radius: Math.round(30 * root.barScale)
 
                 // 4. The Animations
@@ -335,7 +337,7 @@ Scope {
             clip: true
             width: showPill ? Math.min(centerContentRow.implicitWidth + Math.round(32 * root.barScale), maxAvailableWidth) : 0
             height: Math.round(26 * root.barScale)
-            color: root.showFullPlayer ? Qt.lighter(root.bgColor2, 1.4) : (btnMouseArea.containsMouse ? Qt.lighter(root.bgColor2, 1.3) : root.bgColor2)
+            color: root.showFullPlayer ? Qt.lighter(root.pillColor, 1.4) : (btnMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
             radius: Math.round(30 * root.barScale)
 
             readonly property real maxAvailableWidth: parent.width * 0.4
@@ -460,7 +462,7 @@ Scope {
                 implicitWidth: Math.round((notifPanelPopup.unreadCount > 0 ? 50 : 42) * root.barScale)
                 implicitHeight: Math.round(26 * root.barScale)
                 anchors.verticalCenter: parent.verticalCenter
-                color: root.showNotificationPanel ? Qt.lighter(root.bgColor2, 1.4) : (notifMouseArea.containsMouse ? Qt.lighter(root.bgColor2, 1.3) : root.bgColor2)
+                color: root.showNotificationPanel ? Qt.lighter(root.pillColor, 1.4) : (notifMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
                 radius: Math.round(30 * root.barScale)
 
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -513,7 +515,7 @@ Scope {
                 implicitWidth: (statusRow.implicitWidth ?? 0) + Math.round(32 * root.barScale)
                 implicitHeight: Math.round(26 * root.barScale)
                 anchors.verticalCenter: parent.verticalCenter
-                color: root.showControlPanel ? Qt.lighter(root.bgColor2, 1.4) : (statusMouseArea.containsMouse ? Qt.lighter(root.bgColor2, 1.3) : root.bgColor2)
+                color: root.showControlPanel ? Qt.lighter(root.pillColor, 1.4) : (statusMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.3) : root.pillColor)
                 radius: Math.round(30 * root.barScale)
 
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -703,7 +705,7 @@ Scope {
     implicitWidth: sysRow.implicitWidth + Math.round(32 * root.barScale)
     implicitHeight: Math.round(26 * root.barScale)
     anchors.verticalCenter: parent.verticalCenter
-    color: root.bgColor2
+    color: root.pillColor
     radius: Math.round(30 * root.barScale)
 
 
@@ -850,7 +852,7 @@ Scope {
                 implicitWidth: trayRow.implicitWidth + Math.round(24 * root.barScale)
                 implicitHeight: Math.round(26 * root.barScale)
                 anchors.verticalCenter: parent.verticalCenter
-                color: root.bgColor2
+                color: root.pillColor
                 radius: Math.round(30 * root.barScale)
 
                 Row {
@@ -868,7 +870,7 @@ Scope {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Math.round(4 * root.barScale)
-                                color: trayMouseArea.containsMouse ? Qt.lighter(root.bgColor2, 1.5) : "transparent"
+                                color: trayMouseArea.containsMouse ? Qt.lighter(root.pillColor, 1.5) : "transparent"
                                 Behavior on color { ColorAnimation { duration: 150 } }
                             }
 

@@ -116,6 +116,8 @@ hl.on("hyprland.start", function()
     -- Clipboard history (cliphist), shown with SUPER+V
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
+    -- Apps (Hyprland ignores ~/.config/autostart, so they're listed here)
+    hl.exec_cmd("discord --start-minimized")
 end)
 
 

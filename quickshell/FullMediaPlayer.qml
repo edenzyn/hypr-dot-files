@@ -38,7 +38,8 @@ PanelWindow {
         return !player.isPlaying && !(meta["xesam:title"] || meta["xesam:url"] || player.trackTitle)
     }
     readonly property var musicApps: DesktopEntries.applications.values
-        .filter(e => e && !e.noDisplay && (e.categories || []).indexOf("Music") >= 0)
+        // Music category, or "Music" in the name (web apps like YouTube Music have no category)
+        .filter(e => e && !e.noDisplay && ((e.categories || []).indexOf("Music") >= 0 || /music/i.test(e.name || "")))
         .sort((a, b) => a.name.localeCompare(b.name))
 
     PwObjectTracker {

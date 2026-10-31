@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Notifications
+import Quickshell.Io
 
 PanelWindow {
     id: notificationPanelWindow
@@ -31,9 +32,21 @@ PanelWindow {
 
     // ─── Do Not Disturb State ─────────────────────────────────
     property bool dndEnabled: false
+    // Remembered across restarts
+    readonly property string dndStateFile: Quickshell.env("HOME") + "/.local/state/quickshell/dnd"
 
     function toggleDnd() {
         dndEnabled = !dndEnabled
+        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" > \"$1\"", "sh",
+            dndStateFile, dndEnabled ? "1" : "0"])
+    }
+
+    Process {
+        running: true
+        command: ["cat", notificationPanelWindow.dndStateFile]
+        stdout: StdioCollector {
+            onStreamFinished: notificationPanelWindow.dndEnabled = (text.trim() === "1")
+        }
     }
 
     // ─── Notification Storage & Management ────────────────────

@@ -1036,6 +1036,10 @@ PanelWindow {
 
     // Accent color for the whole shell; Bar.qml watches this file
     function setAccent(hex) {
+        let c = Qt.color(hex)
+        if (c.hslLightness < 0.55)  // too dark on #121213: keep the hue, brighten it
+            c = Qt.hsla(Math.max(0, c.hslHue), Math.max(c.hslSaturation, 0.5), 0.62, 1)
+        hex = c.toString()
         Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && echo \"$2\" > \"$1\"", "sh",
             Quickshell.env("HOME") + "/.local/state/quickshell/accent", hex.toUpperCase()])
     }
@@ -3617,8 +3621,8 @@ PanelWindow {
                     spacing: 6
 
                     Repeater {
-                        // Catppuccin Mocha accents
-                        model: ["#89B4FA", "#B4BEFE", "#CBA6F7", "#F5C2E7", "#F38BA8", "#FAB387", "#F9E2AF", "#A6E3A1", "#94E2D5"]
+                        // Sky, Lilac, Sakura, Coral, Apricot, Butter, Matcha, Mint, Lagoon, Orchid
+                        model: ["#89B4FA", "#C4B5FD", "#F5A8D4", "#FF9E9E", "#FFC48C", "#F8E3A1", "#B8E6A1", "#8EE3D0", "#89DCEB", "#E7C6FF"]
 
                         Rectangle {
                             required property string modelData
@@ -3635,6 +3639,51 @@ PanelWindow {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: controlPanelWindow.setAccent(modelData)
                             }
+                        }
+                    }
+                }
+
+                // Color picker: any hue, kept at a soft readable lightness
+                Rectangle {
+                    id: hueStrip
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 22
+                    radius: 11
+                    property real pickedHue: -1 // live preview while dragging
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.000; color: Qt.hsla(0.000, 0.85, 0.72, 1) }
+                        GradientStop { position: 0.167; color: Qt.hsla(0.167, 0.85, 0.72, 1) }
+                        GradientStop { position: 0.333; color: Qt.hsla(0.333, 0.85, 0.72, 1) }
+                        GradientStop { position: 0.500; color: Qt.hsla(0.500, 0.85, 0.72, 1) }
+                        GradientStop { position: 0.667; color: Qt.hsla(0.667, 0.85, 0.72, 1) }
+                        GradientStop { position: 0.833; color: Qt.hsla(0.833, 0.85, 0.72, 1) }
+                        GradientStop { position: 1.000; color: Qt.hsla(0.999, 0.85, 0.72, 1) }
+                    }
+
+                    // Knob at the current accent's hue
+                    Rectangle {
+                        readonly property real hue: hueStrip.pickedHue >= 0 ? hueStrip.pickedHue : Math.max(0, controlPanelWindow.accentColor.hslHue)
+                        x: Math.round(hue * (hueStrip.width - width))
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 16
+                        height: 16
+                        radius: 8
+                        color: Qt.hsla(hue, 0.85, 0.72, 1)
+                        border.width: 2
+                        border.color: "#FFFFFF"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        function hueAt(x) { return Math.max(0, Math.min(0.999, x / width)) }
+                        onPressed: (mouse) => hueStrip.pickedHue = hueAt(mouse.x)
+                        onPositionChanged: (mouse) => { if (pressed) hueStrip.pickedHue = hueAt(mouse.x) }
+                        onReleased: {
+                            controlPanelWindow.setAccent(Qt.hsla(hueStrip.pickedHue, 0.85, 0.72, 1).toString())
+                            hueStrip.pickedHue = -1
                         }
                     }
                 }

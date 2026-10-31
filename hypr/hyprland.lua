@@ -111,6 +111,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
     -- Quickshell: bar, launcher, panels and the wallpaper (WallpaperBackground.qml)
     hl.exec_cmd("~/.config/hypr/quickshell.sh")
+    -- Volume, mic and brightness from last session (saved by Quickshell)
+    hl.exec_cmd("~/.config/hypr/session_settings.sh restore")
     -- If the wallpaper is a video, start its player (mpvpaper)
     hl.exec_cmd("~/.config/hypr/set_wallpaper.sh --restore")
     -- Clipboard history (cliphist), shown with SUPER+V

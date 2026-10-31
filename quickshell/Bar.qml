@@ -18,6 +18,14 @@ Scope {
 
     readonly property var barPanelWindow: barWindow
 
+    // ─── Remember volume, mic and brightness across restarts ──
+    Timer {
+        interval: 30000
+        running: true
+        repeat: true
+        onTriggered: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/session_settings.sh", "save"])
+    }
+
     // ─── Tray click: jump to the app's window, open it if it has none ──
     property var trayFocusItem: null
     Process {

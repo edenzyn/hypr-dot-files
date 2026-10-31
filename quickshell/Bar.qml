@@ -627,7 +627,7 @@ Scope {
                     Text {
                         id: wifiIcon
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf6ff"
+                        text: "\uf1eb"
                         font { family: "Font Awesome 6 Free"; weight: Font.Bold; pixelSize: Math.round(13 * root.barScale) }
                         color: root.accentColor
                         topPadding: 1.5
@@ -726,12 +726,17 @@ Scope {
                                 }
                             }
 
+                            // Ethernet / disconnected glyphs only exist in the Nerd Font,
+                            // Wi-Fi uses Font Awesome
                             if (ethConnected) {
-                                wifiIcon.text = "\uf6ff" // fa-network-wired
+                                wifiIcon.font.family = "JetBrainsMono Nerd Font"
+                                wifiIcon.text = "\u{f0200}" // nf-md-ethernet
                             } else if (wifiConnected) {
+                                wifiIcon.font.family = "Font Awesome 6 Free"
                                 wifiIcon.text = "\uf1eb" // fa-wifi
                             } else {
-                                wifiIcon.text = "󰤭" // disconnected
+                                wifiIcon.font.family = "JetBrainsMono Nerd Font"
+                                wifiIcon.text = "\u{f092d}" // nf-md-wifi-off
                             }
                         }
                     }

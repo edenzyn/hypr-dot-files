@@ -156,12 +156,19 @@ Scope {
         function onValuesChanged() { root.activePlayer = findActivePlayer() }
     }
 
-    Connections {
-        target: root.activePlayer
-        ignoreUnknownSignals: true
-        function onIsPlayingChanged() { root.activePlayer = findActivePlayer() }
-        function onPlaybackStateChanged() { root.activePlayer = findActivePlayer() }
-        function onMetadataChanged() { root.activePlayer = findActivePlayer() } // track ended / cleared
+    // Watch EVERY player, not just the active one: a player that registered
+    // before it had a track (e.g. a browser tab / web app) must be picked up
+    // as soon as its track loads or it starts playing
+    Instantiator {
+        model: Mpris.players
+        delegate: Connections {
+            required property var modelData
+            target: modelData
+            ignoreUnknownSignals: true
+            function onIsPlayingChanged() { root.activePlayer = root.findActivePlayer() }
+            function onPlaybackStateChanged() { root.activePlayer = root.findActivePlayer() }
+            function onMetadataChanged() { root.activePlayer = root.findActivePlayer() } // track loaded / ended
+        }
     }
 
     PanelWindow {
